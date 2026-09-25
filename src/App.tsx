@@ -1,5 +1,16 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { POS } from './pages/POS';
+
 function App() {
-  return <div className="p-4 text-2xl font-bold">PDV Amor dr Shake</div>
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/pos" replace />} />
+        <Route path="/pos" element={<POS />} />
+        {/* Futuras rotas vão aqui */}
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
