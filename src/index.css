@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globais básicos para o app do tablet */
+body {
+  background-color: #f3f4f6;
+}
