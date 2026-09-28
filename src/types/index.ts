@@ -9,6 +9,7 @@ export interface Product {
   is_active: boolean;
 }
 
+// 👇 ESTA É A INTERFACE QUE ESTÁ FALTANDO OU NÃO FOI SALVA
 export interface CartAddon {
   product: Product;
   quantity: number;

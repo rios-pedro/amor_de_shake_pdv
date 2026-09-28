@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
-import { Product, CartAddon } from '../types';
+import type { Product, CartAddon } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface AddonModalProps {
