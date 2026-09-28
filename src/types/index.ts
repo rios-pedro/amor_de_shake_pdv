@@ -1,4 +1,4 @@
-export type ProductCategory = 'Shakes' | 'Adicionais' | 'Bebidas' | 'Outros';
+export type ProductCategory = 'Shakes' | 'Refeições' | 'Lanches' | 'Bebidas' | 'Adicionais' | 'Kits' | 'Outros';
 
 export interface Product {
   id: string;

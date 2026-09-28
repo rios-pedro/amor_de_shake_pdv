@@ -4,7 +4,7 @@ import type { Product, ProductCategory } from '../types';
 import { Plus, Edit2, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const CATEGORIES: ProductCategory[] = ['Shakes', 'Adicionais', 'Bebidas', 'Outros'];
+const CATEGORIES: ProductCategory[] = ['Shakes', 'Refeições', 'Lanches', 'Bebidas', 'Adicionais', 'Kits', 'Outros'];
 
 export const ProductsAdmin: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -125,12 +125,20 @@ export const ProductsAdmin: React.FC = () => {
             </Link>
             <h1 className="text-3xl font-extrabold text-gray-900">Gerenciar Produtos</h1>
           </div>
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-bold shadow-sm transition-all active:scale-95"
-          >
-            <Plus className="w-5 h-5" /> Novo Produto
-          </button>
+          <div className="flex gap-3">
+            <Link
+              to="/admin/product-addons"
+              className="flex items-center gap-2 bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-5 py-3 rounded-xl font-bold shadow-sm transition-all active:scale-95"
+            >
+              Vincular Adicionais
+            </Link>
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-bold shadow-sm transition-all active:scale-95"
+            >
+              <Plus className="w-5 h-5" /> Novo Produto
+            </button>
+          </div>
         </header>
 
         {loading ? (

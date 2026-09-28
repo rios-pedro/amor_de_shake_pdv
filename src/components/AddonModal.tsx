@@ -17,25 +17,44 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchAddons() {
-      const { data, error } = await supabase
+    async function fetchAddonsForProduct() {
+      if (!product) return;
+      setLoading(true);
+
+      // Busca na tabela de relação quais adicionais pertencem a este produto
+      const { data: relations, error: relError } = await supabase
+        .from('product_addons_relation')
+        .select('addon_id')
+        .eq('product_id', product.id);
+
+      if (relError || !relations || relations.length === 0) {
+        // Se o produto não tiver relações específicas cadastradas ainda, opcionalmente trazemos todos os adicionais ou nenhum
+        setAvailableAddons([]);
+        setLoading(false);
+        return;
+      }
+
+      const addonIds = relations.map(r => r.addon_id);
+
+      // Busca os detalhes dos produtos que são esses adicionais
+      const { data: addonsData, error: addonsError } = await supabase
         .from('products')
         .select('*')
-        .eq('category', 'Adicionais')
+        .in('id', addonIds)
         .eq('is_active', true);
-      
-      if (!error && data) {
-        setAvailableAddons(data);
+
+      if (!addonsError && addonsData) {
+        setAvailableAddons(addonsData);
       }
       setLoading(false);
     }
     
-    if (isOpen) {
-      fetchAddons();
+    if (isOpen && product) {
+      fetchAddonsForProduct();
       setQuantity(1);
       setSelectedAddons({});
     }
-  }, [isOpen]);
+  }, [isOpen, product]);
 
   if (!isOpen || !product) return null;
 
@@ -66,7 +85,6 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
     onClose();
   };
 
-  // Calcula subtotal em tempo real no modal
   const addonsTotal = Object.entries(selectedAddons).reduce((total, [id, qty]) => {
     const addon = availableAddons.find(a => a.id === id);
     return total + ((addon?.price || 0) * qty);
@@ -88,14 +106,14 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setQuantity(q => Math.max(1, q - 1))}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 active:bg-red-200"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 text-pink-600 active:bg-pink-200"
             >
               <Minus size={24} />
             </button>
             <span className="text-2xl font-bold">{quantity}</span>
             <button 
               onClick={() => setQuantity(q => q + 1)}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 active:bg-emerald-200"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 text-pink-600 active:bg-pink-200"
             >
               <Plus size={24} />
             </button>
@@ -103,9 +121,11 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
         </div>
 
         <div className="mb-8">
-          <h3 className="mb-3 text-lg font-semibold text-gray-700">Adicionais</h3>
+          <h3 className="mb-3 text-lg font-semibold text-gray-700">Adicionais Disponíveis</h3>
           {loading ? (
-            <p>Carregando adicionais...</p>
+            <p className="text-gray-400">Carregando adicionais...</p>
+          ) : availableAddons.length === 0 ? (
+            <p className="text-gray-500 text-sm italic bg-gray-50 p-4 rounded-lg">Este produto não possui adicionais específicos configurados.</p>
           ) : (
             <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-2">
               {availableAddons.map(addon => (
@@ -140,7 +160,7 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
 
         <button
           onClick={handleConfirm}
-          className="w-full rounded-lg bg-emerald-600 py-4 text-xl font-bold text-white transition-colors hover:bg-emerald-700 active:bg-emerald-800"
+          className="w-full rounded-lg bg-pink-500 py-4 text-xl font-bold text-white transition-colors hover:bg-pink-600 active:bg-pink-700"
         >
           Confirmar - R$ {total.toFixed(2)}
         </button>
