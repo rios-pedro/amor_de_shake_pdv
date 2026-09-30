@@ -87,7 +87,6 @@ export const ProductsAdmin: React.FC = () => {
     }
   };
 
-  // Gera o arquivo recortado com base na seleção do usuário
   const handleConfirmCrop = async () => {
     const image = imgRef.current;
     if (!image || !completedCrop || completedCrop.width === 0 || completedCrop.height === 0) {
@@ -99,7 +98,6 @@ export const ProductsAdmin: React.FC = () => {
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
     
-    // Define a resolução final limpa de 500x500 pixels
     canvas.width = 500;
     canvas.height = 500;
     const ctx = canvas.getContext('2d');
@@ -134,7 +132,6 @@ export const ProductsAdmin: React.FC = () => {
     try {
       let imageUrl = formData.image_url;
 
-      // Se o usuário recortou uma nova imagem, envia para o Storage do Supabase
       if (croppedImageBlob) {
         const fileName = `prod_${Date.now()}.jpg`;
         const { error: uploadError } = await supabase.storage
@@ -203,25 +200,26 @@ export const ProductsAdmin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
+        {/* Cabeçalho Responsivo */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <Link to="/pos" className="inline-flex items-center text-pink-500 hover:text-pink-600 mb-2 font-medium">
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao PDV
             </Link>
-            <h1 className="text-3xl font-extrabold text-gray-900">Gerenciar Produtos</h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">Gerenciar Produtos</h1>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
             <Link
               to="/admin/product-addons"
-              className="flex items-center gap-2 bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-5 py-3 rounded-xl font-bold shadow-sm transition-all active:scale-95"
+              className="flex-1 md:flex-initial text-center bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
             >
               Vincular Adicionais
             </Link>
             <button
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-bold shadow-sm transition-all active:scale-95"
+              className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
             >
               <Plus className="w-5 h-5" /> Novo Produto
             </button>
@@ -233,69 +231,124 @@ export const ProductsAdmin: React.FC = () => {
             <Loader2 className="w-12 h-12 text-pink-400 animate-spin" />
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="p-4 font-semibold text-gray-600 w-16">Foto</th>
-                  <th className="p-4 font-semibold text-gray-600">Nome do Produto</th>
-                  <th className="p-4 font-semibold text-gray-600">Categoria</th>
-                  <th className="p-4 font-semibold text-gray-600">Preço</th>
-                  <th className="p-4 font-semibold text-gray-600">Status</th>
-                  <th className="p-4 font-semibold text-gray-600 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="p-4">
-                      {product.image_url ? (
-                        <img src={product.image_url} alt={product.name} className="w-12 h-12 object-cover rounded-xl border border-gray-200" />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                          <ImageIcon className="w-5 h-5" />
-                        </div>
-                      )}
-                    </td>
-                    <td className="p-4 font-medium text-gray-800">{product.name}</td>
-                    <td className="p-4">
-                      <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
-                        {product.category}
-                      </span>
-                    </td>
-                    <td className="p-4 font-bold text-gray-700">R$ {product.price.toFixed(2)}</td>
-                    <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+          <>
+            {/* Visualização em Tabela para Tablets e Computadores (hidden no mobile) */}
+            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="p-4 font-semibold text-gray-600 w-16">Foto</th>
+                    <th className="p-4 font-semibold text-gray-600">Nome do Produto</th>
+                    <th className="p-4 font-semibold text-gray-600">Categoria</th>
+                    <th className="p-4 font-semibold text-gray-600">Preço</th>
+                    <th className="p-4 font-semibold text-gray-600">Status</th>
+                    <th className="p-4 font-semibold text-gray-600 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((product) => (
+                    <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="p-4">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.name} className="w-12 h-12 object-cover rounded-xl border border-gray-200" />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                            <ImageIcon className="w-5 h-5" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 font-medium text-gray-800">{product.name}</td>
+                      <td className="p-4">
+                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
+                          {product.category}
+                        </span>
+                      </td>
+                      <td className="p-4 font-bold text-gray-700">R$ {product.price.toFixed(2)}</td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          product.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {product.is_active ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </td>
+                      <td className="p-4 flex justify-end gap-2 items-center h-20">
+                        <button
+                          onClick={() => handleOpenModal(product)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(product.id, product.is_active)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            product.is_active 
+                              ? 'text-red-500 hover:bg-red-50' 
+                              : 'text-emerald-500 hover:bg-emerald-50'
+                          }`}
+                          title={product.is_active ? "Desativar" : "Reativar"}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Visualização em Cards para Celulares (visível apenas no mobile) */}
+            <div className="md:hidden space-y-3">
+              {products.map((product) => (
+                <div key={product.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    {product.image_url ? (
+                      <img src={product.image_url} alt={product.name} className="w-14 h-14 object-cover rounded-xl border border-gray-200 flex-shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 flex-shrink-0">
+                        <ImageIcon className="w-6 h-6" />
+                      </div>
+                    )}
+                    <div className="overflow-hidden">
+                      <h3 className="font-bold text-gray-800 text-sm truncate">{product.name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-medium">
+                          {product.category}
+                        </span>
+                        <span className="font-black text-gray-900 text-xs">
+                          R$ {product.price.toFixed(2)}
+                        </span>
+                      </div>
+                      <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded ${
                         product.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
                       }`}>
                         {product.is_active ? 'Ativo' : 'Inativo'}
                       </span>
-                    </td>
-                    <td className="p-4 flex justify-end gap-2 items-center h-20">
-                      <button
-                        onClick={() => handleOpenModal(product)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(product.id, product.is_active)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          product.is_active 
-                            ? 'text-red-500 hover:bg-red-50' 
-                            : 'text-emerald-500 hover:bg-emerald-50'
-                        }`}
-                        title={product.is_active ? "Desativar" : "Reativar"}
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => handleOpenModal(product)}
+                      className="p-2 text-blue-600 bg-blue-50 rounded-xl transition-colors"
+                      title="Editar"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleToggleActive(product.id, product.is_active)}
+                      className={`p-2 rounded-xl transition-colors ${
+                        product.is_active ? 'text-red-500 bg-red-50' : 'text-emerald-500 bg-emerald-50'
+                      }`}
+                      title={product.is_active ? "Desativar" : "Reativar"}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -321,14 +374,14 @@ export const ProductsAdmin: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsCropperOpen(false)}
-                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors text-sm"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleConfirmCrop}
-                className="flex-1 px-4 py-3 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors flex items-center justify-center gap-2 text-sm"
               >
                 <Check className="w-5 h-5" /> Confirmar Recorte
               </button>
@@ -346,7 +399,6 @@ export const ProductsAdmin: React.FC = () => {
             </h2>
             
             <form onSubmit={handleSave} className="space-y-4">
-              {/* Campo de Foto com Preview */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Foto do Produto (Opcional - Proporção 1:1)</label>
                 <div className="flex items-center gap-4">
@@ -384,7 +436,7 @@ export const ProductsAdmin: React.FC = () => {
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm"
                   placeholder="Ex: Shake de Morango"
                 />
               </div>
@@ -399,7 +451,7 @@ export const ProductsAdmin: React.FC = () => {
                     min="0"
                     value={formData.price}
                     onChange={e => setFormData({...formData, price: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm"
                     placeholder="18.00"
                   />
                 </div>
@@ -408,7 +460,7 @@ export const ProductsAdmin: React.FC = () => {
                   <select
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value as ProductCategory})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none bg-white"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none bg-white text-sm"
                   >
                     {CATEGORIES.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -425,7 +477,7 @@ export const ProductsAdmin: React.FC = () => {
                   onChange={e => setFormData({...formData, is_active: e.target.checked})}
                   className="w-5 h-5 text-pink-500 rounded focus:ring-pink-500"
                 />
-                <label htmlFor="isActive" className="font-medium text-gray-700 cursor-pointer">
+                <label htmlFor="isActive" className="font-medium text-gray-700 cursor-pointer text-sm">
                   Produto Ativo (Aparece no PDV)
                 </label>
               </div>
@@ -434,14 +486,14 @@ export const ProductsAdmin: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 px-4 py-3 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors disabled:opacity-50 text-sm"
                 >
                   {isSaving ? 'Salvando...' : 'Salvar'}
                 </button>
