@@ -7,10 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['amor de shake.png'],
       manifest: {
         name: 'Amor dr Shake PDV',
-        short_name: 'Amor de Shake',
+        short_name: 'Amor dr Shake',
         description: 'Sistema de PDV e Gestão',
         theme_color: '#db2777',
         background_color: '#f9fafb',
@@ -18,14 +18,10 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
+            src: '/amor de shake.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }

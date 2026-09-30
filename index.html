@@ -1,28 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/amor de shake.png" />
+    <link rel="apple-touch-icon" href="/amor de shake.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>amor-de-shake-pdv</title>
+    <title>Amor dr Shake PDV</title>
+    
+    <!-- Script para bloquear zoom de pinça -->
     <script>
-  // Bloqueia o gesto de pinça para dar zoom no iOS e Android
-  document.addEventListener('gesturestart', function (e) {
-    e.preventDefault();
-  });
-
-  // Previne zoom por toque duplo com múltiplos dedos
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', function (e) {
-    const now = (new Date()).getTime();
-    if (now - lastTouchEnd <= 300) {
-      e.preventDefault();
-    }
-    lastTouchEnd = now;
-}, { passive: false });
-</script>
+      document.addEventListener('gesturestart', function (e) {
+        e.preventDefault();
+      });
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function (e) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+          e.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, { passive: false });
+    </script>
   </head>
-  <body>
+  <body class="bg-gray-100 text-gray-900 select-none">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
