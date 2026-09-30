@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from '../types';
-import { ArrowLeft, Loader2, CheckCircle2, Clock, Trash2, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Loader2, Clock, Trash2, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ActiveOrders: React.FC = () => {
