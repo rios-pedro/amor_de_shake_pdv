@@ -9,7 +9,6 @@ export const ActiveOrders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Estados para o Modal de Finalizar Comanda (Pagamento e Desconto)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [discount, setDiscount] = useState<string>('0.00');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -37,14 +36,21 @@ export const ActiveOrders: React.FC = () => {
           *,
           order_items (
             id,
-            product_name,
             quantity,
             unit_price,
-            total_price,
+            subtotal,
             notes,
+            products (
+              name
+            ),
             order_item_addons (
-              addon_name,
-              addon_price
+              id,
+              quantity,
+              unit_price,
+              subtotal,
+              products:addon_product_id (
+                name
+              )
             )
           )
         `)
@@ -128,7 +134,6 @@ export const ActiveOrders: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        {/* Cabeçalho */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <Link to="/pos" className="inline-flex items-center text-pink-500 hover:text-pink-600 mb-2 font-medium">
@@ -159,11 +164,9 @@ export const ActiveOrders: React.FC = () => {
                 key={order.id} 
                 className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden"
               >
-                {/* Faixa decorativa no topo */}
                 <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-pink-400 to-pink-600" />
 
                 <div>
-                  {/* Nome do Cliente e Hora */}
                   <div className="flex justify-between items-start mb-4 pt-1">
                     <div>
                       <span className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500 bg-pink-50 px-2.5 py-1 rounded-md">
@@ -176,28 +179,25 @@ export const ActiveOrders: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Lista de Itens do Pedido (Sempre Visível) */}
                   <div className="space-y-3 mb-6 max-h-56 overflow-y-auto pr-1">
                     {order.order_items?.map((item: any, idx: number) => (
                       <div key={idx} className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
                         <div className="flex justify-between items-start font-bold text-gray-800 text-sm">
-                          <span>{item.quantity}x {item.product_name}</span>
-                          <span className="text-gray-900">R$ {item.total_price.toFixed(2)}</span>
+                          <span>{item.quantity}x {item.products?.name || 'Produto'}</span>
+                          <span className="text-gray-900">R$ {item.subtotal.toFixed(2)}</span>
                         </div>
 
-                        {/* Adicionais */}
                         {item.order_item_addons && item.order_item_addons.length > 0 && (
                           <div className="mt-1.5 pl-2 border-l-2 border-pink-200 space-y-0.5">
                             {item.order_item_addons.map((addon: any, aIdx: number) => (
                               <p key={aIdx} className="text-xs text-gray-500 flex justify-between">
-                                <span>+ {addon.addon_name}</span>
-                                <span>R$ {addon.addon_price.toFixed(2)}</span>
+                                <span>+ {addon.products?.name || 'Adicional'}</span>
+                                <span>R$ {addon.subtotal.toFixed(2)}</span>
                               </p>
                             ))}
                           </div>
                         )}
 
-                        {/* Observações */}
                         {item.notes && (
                           <p className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded-lg mt-2 font-medium">
                             Obs: {item.notes}
@@ -209,13 +209,11 @@ export const ActiveOrders: React.FC = () => {
                 </div>
 
                 <div>
-                  {/* Valor Total */}
                   <div className="pt-4 border-t border-gray-100 flex justify-between items-center mb-4">
                     <span className="text-sm font-semibold text-gray-500">Total</span>
                     <span className="text-2xl font-black text-gray-900">R$ {order.total_amount.toFixed(2)}</span>
                   </div>
 
-                  {/* Botões de Ação */}
                   <div className="space-y-2">
                     <button
                       onClick={() => handleOpenPaymentModal(order)}
@@ -238,7 +236,6 @@ export const ActiveOrders: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de Pagamento e Desconto */}
       {isPaymentModalOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200">
