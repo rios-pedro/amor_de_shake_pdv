@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Product, ProductCategory } from '../types';
-import { Plus, Edit2, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowLeft, Loader2, Image as ImageIcon, Upload, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 const CATEGORIES: ProductCategory[] = ['Shakes', 'Refeições', 'Lanches', 'Bebidas', 'Adicionais', 'Kits', 'Outros'];
 
@@ -18,8 +20,20 @@ export const ProductsAdmin: React.FC = () => {
     name: '',
     price: '',
     category: 'Shakes' as ProductCategory,
-    is_active: true
+    is_active: true,
+    image_url: ''
   });
+
+  const [imagePreview, setImagePreview] = useState<string>('');
+  
+  // Estados para o Cropper de Imagem
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [imgSrc, setImgSrc] = useState('');
+  const [crop, setCrop] = useState<any>({ unit: '%', width: 90, height: 90, x: 5, y: 5 });
+  const [completedCrop, setCompletedCrop] = useState<any>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -47,37 +61,110 @@ export const ProductsAdmin: React.FC = () => {
         name: product.name,
         price: product.price.toString(),
         category: product.category,
-        is_active: product.is_active
+        is_active: product.is_active,
+        image_url: product.image_url || ''
       });
+      setImagePreview(product.image_url || '');
       setEditingId(product.id);
     } else {
-      setFormData({ name: '', price: '', category: 'Shakes', is_active: true });
+      setFormData({ name: '', price: '', category: 'Shakes', is_active: true, image_url: '' });
+      setImagePreview('');
       setEditingId(null);
     }
+    setCroppedImageBlob(null);
     setIsModalOpen(true);
+  };
+
+  const handleSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setCrop({ unit: '%', width: 90, height: 90, x: 5, y: 5 });
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImgSrc(reader.result?.toString() || '');
+        setIsCropperOpen(true);
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  // Gera o arquivo recortado com base na seleção do usuário
+  const handleConfirmCrop = async () => {
+    const image = imgRef.current;
+    if (!image || !completedCrop || completedCrop.width === 0 || completedCrop.height === 0) {
+      setIsCropperOpen(false);
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    // Define a resolução final limpa de 500x500 pixels
+    canvas.width = 500;
+    canvas.height = 500;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
+
+    ctx.drawImage(
+      image,
+      completedCrop.x * scaleX,
+      completedCrop.y * scaleY,
+      completedCrop.width * scaleX,
+      completedCrop.height * scaleY,
+      0,
+      0,
+      500,
+      500
+    );
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        setCroppedImageBlob(blob);
+        setImagePreview(URL.createObjectURL(blob));
+      }
+      setIsCropperOpen(false);
+    }, 'image/jpeg', 0.9);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
-    const productData = {
-      name: formData.name,
-      price: parseFloat(formData.price),
-      category: formData.category,
-      is_active: formData.is_active
-    };
-
     try {
+      let imageUrl = formData.image_url;
+
+      // Se o usuário recortou uma nova imagem, envia para o Storage do Supabase
+      if (croppedImageBlob) {
+        const fileName = `prod_${Date.now()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, croppedImageBlob, { contentType: 'image/jpeg', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicData } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
+
+        imageUrl = publicData.publicUrl;
+      }
+
+      const productData = {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        is_active: formData.is_active,
+        image_url: imageUrl || null
+      };
+
       if (editingId) {
-        // Atualiza produto existente
         const { error } = await supabase
           .from('products')
           .update(productData)
           .eq('id', editingId);
         if (error) throw error;
       } else {
-        // Cria novo produto
         const { error } = await supabase
           .from('products')
           .insert([productData]);
@@ -88,7 +175,7 @@ export const ProductsAdmin: React.FC = () => {
       fetchProducts();
     } catch (error) {
       console.error('Erro ao salvar produto:', error);
-      alert('Erro ao salvar o produto.');
+      alert('Erro ao salvar o produto com a imagem.');
     } finally {
       setIsSaving(false);
     }
@@ -150,6 +237,7 @@ export const ProductsAdmin: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="p-4 font-semibold text-gray-600 w-16">Foto</th>
                   <th className="p-4 font-semibold text-gray-600">Nome do Produto</th>
                   <th className="p-4 font-semibold text-gray-600">Categoria</th>
                   <th className="p-4 font-semibold text-gray-600">Preço</th>
@@ -160,6 +248,15 @@ export const ProductsAdmin: React.FC = () => {
               <tbody>
                 {products.map((product) => (
                   <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td className="p-4">
+                      {product.image_url ? (
+                        <img src={product.image_url} alt={product.name} className="w-12 h-12 object-cover rounded-xl border border-gray-200" />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                          <ImageIcon className="w-5 h-5" />
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4 font-medium text-gray-800">{product.name}</td>
                     <td className="p-4">
                       <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
@@ -174,7 +271,7 @@ export const ProductsAdmin: React.FC = () => {
                         {product.is_active ? 'Ativo' : 'Inativo'}
                       </span>
                     </td>
-                    <td className="p-4 flex justify-end gap-2">
+                    <td className="p-4 flex justify-end gap-2 items-center h-20">
                       <button
                         onClick={() => handleOpenModal(product)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -202,15 +299,84 @@ export const ProductsAdmin: React.FC = () => {
         )}
       </div>
 
+      {/* Modal de Recorte Interativo (Cropper) */}
+      {isCropperOpen && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-xl shadow-2xl flex flex-col items-center">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Ajustar Enquadramento (1:1)</h3>
+            <p className="text-sm text-gray-500 mb-4 text-center">Arraste e redimensione a área de corte para escolher a melhor parte da foto.</p>
+            
+            <div className="max-h-[60vh] overflow-auto flex justify-center w-full bg-gray-900 rounded-xl p-2 mb-6">
+              <ReactCrop
+                crop={crop}
+                onChange={(c) => setCrop(c)}
+                onComplete={(c) => setCompletedCrop(c)}
+                aspect={1}
+              >
+                <img ref={imgRef} src={imgSrc} alt="Ajustar" className="max-h-[50vh]" />
+              </ReactCrop>
+            </div>
+
+            <div className="flex gap-3 w-full">
+              <button
+                type="button"
+                onClick={() => setIsCropperOpen(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCrop}
+                className="flex-1 px-4 py-3 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <Check className="w-5 h-5" /> Confirmar Recorte
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Criação/Edição */}
-      {isModalOpen && (
+      {isModalOpen && !isCropperOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">
               {editingId ? 'Editar Produto' : 'Novo Produto'}
             </h2>
             
             <form onSubmit={handleSave} className="space-y-4">
+              {/* Campo de Foto com Preview */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Foto do Produto (Opcional - Proporção 1:1)</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 bg-gray-100 rounded-xl border border-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0 relative">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleSelectFile}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-300 text-gray-700 py-2.5 px-4 rounded-xl font-medium hover:bg-gray-100 transition-colors text-sm"
+                    >
+                      <Upload className="w-4 h-4" /> Escolher Foto
+                    </button>
+                    <p className="text-xs text-gray-400 mt-1">Você poderá ajustar o corte ao selecionar.</p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
                 <input
