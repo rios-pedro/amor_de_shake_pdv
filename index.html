@@ -5,6 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>amor-de-shake-pdv</title>
+    <script>
+  // Bloqueia o gesto de pinça para dar zoom no iOS e Android
+  document.addEventListener('gesturestart', function (e) {
+    e.preventDefault();
+  });
+
+  // Previne zoom por toque duplo com múltiplos dedos
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function (e) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+}, { passive: false });
+</script>
   </head>
   <body>
     <div id="root"></div>
