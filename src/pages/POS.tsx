@@ -158,7 +158,7 @@ export const POS: React.FC = () => {
               return (
                 <div 
                   key={cat} 
-                  ref={el => (categoryRefs.current[cat] = el)}
+                  ref={el => { categoryRefs.current[cat] = el; }}
                   className="scroll-mt-6"
                 >
                   <h2 className="text-lg md:text-xl font-black text-gray-800 mb-4 border-b border-gray-200 pb-2">

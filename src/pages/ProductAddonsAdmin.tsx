@@ -83,8 +83,6 @@ export const ProductAddonsAdmin: React.FC = () => {
           .eq('addon_id', addonId);
 
         if (error) throw error;
-        setLinkedAddonIds(prev => prev.idCode ? prev : prev.filter(id => id !== addonId));
-        // Correção simples para atualizar o state local removendo o id:
         setLinkedAddonIds(prev => prev.filter(id => id !== addonId));
       } else {
         // Adiciona o vínculo
