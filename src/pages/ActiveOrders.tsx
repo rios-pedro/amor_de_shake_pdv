@@ -30,35 +30,91 @@ export const ActiveOrders: React.FC = () => {
 
   const fetchActiveOrders = async () => {
     try {
-      const { data, error } = await supabase
+      // 1. Busca todas as comandas pendentes
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select(`
-          *,
-          order_items (
-            id,
-            quantity,
-            unit_price,
-            subtotal,
-            notes,
-            products:product_id (
-              name
-            ),
-            order_item_addons (
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (ordersError) throw ordersError;
+
+      if (!ordersData || ordersData.length === 0) {
+        setOrders([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Para cada comanda, busca os itens e os produtos/adicionais correspondentes para garantir 100% de precisão
+      const enrichedOrders = await Promise.all(
+        ordersData.map(async (order) => {
+          const { data: itemsData } = await supabase
+            .from('order_items')
+            .select(`
               id,
               quantity,
               unit_price,
               subtotal,
-              products:addon_product_id (
-                name
+              notes,
+              product_id,
+              order_item_addons (
+                id,
+                quantity,
+                unit_price,
+                subtotal,
+                addon_product_id
               )
-            )
-          )
-        `)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+            `)
+            .eq('order_id', order.id);
 
-      if (error) throw error;
-      setOrders(data || []);
+          const itemsWithDetails = await Promise.all(
+            (itemsData || []).map(async (item: any) => {
+              // Busca o nome do produto principal
+              let productName = 'Produto';
+              if (item.product_id) {
+                const { data: prodData } = await supabase
+                  .from('products')
+                  .select('name')
+                  .eq('id', item.product_id)
+                  .single();
+                if (prodData) productName = prodData.name;
+              }
+
+              // Busca os detalhes dos adicionais
+              const addonsWithDetails = await Promise.all(
+                (item.order_item_addons || []).map(async (addon: any) => {
+                  let addonName = 'Adicional';
+                  if (addon.addon_product_id) {
+                    const { data: addonProdData } = await supabase
+                      .from('products')
+                      .select('name')
+                      .eq('id', addon.addon_product_id)
+                      .single();
+                    if (addonProdData) addonName = addonProdData.name;
+                  }
+                  return {
+                    ...addon,
+                    addon_name: addonName
+                  };
+                })
+              );
+
+              return {
+                ...item,
+                product_name: productName,
+                order_item_addons: addonsWithDetails
+              };
+            })
+          );
+
+          return {
+            ...order,
+            order_items: itemsWithDetails
+          };
+        })
+      );
+
+      setOrders(enrichedOrders);
     } catch (error) {
       console.error('Erro ao buscar comandas ativas:', error);
     } finally {
@@ -179,11 +235,12 @@ export const ActiveOrders: React.FC = () => {
                     </span>
                   </div>
 
+                  {/* Listagem detalhada dos itens e adicionais */}
                   <div className="space-y-3 mb-6 max-h-56 overflow-y-auto pr-1">
                     {order.order_items?.map((item: any, idx: number) => (
                       <div key={idx} className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
                         <div className="flex justify-between items-start font-bold text-gray-800 text-sm">
-                          <span>{item.quantity}x {item.products?.name || 'Produto'}</span>
+                          <span>{item.quantity}x {item.product_name}</span>
                           <span className="text-gray-900">R$ {item.subtotal.toFixed(2)}</span>
                         </div>
 
@@ -191,7 +248,7 @@ export const ActiveOrders: React.FC = () => {
                           <div className="mt-1.5 pl-2 border-l-2 border-pink-200 space-y-0.5">
                             {item.order_item_addons.map((addon: any, aIdx: number) => (
                               <p key={aIdx} className="text-xs text-gray-500 flex justify-between">
-                                <span>+ {addon.products?.name || 'Adicional'}</span>
+                                <span>+ {addon.addon_name}</span>
                                 <span>R$ {addon.subtotal.toFixed(2)}</span>
                               </p>
                             ))}
