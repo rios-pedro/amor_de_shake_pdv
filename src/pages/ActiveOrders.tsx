@@ -40,7 +40,7 @@ export const ActiveOrders: React.FC = () => {
             unit_price,
             subtotal,
             notes,
-            products (
+            products:product_id (
               name
             ),
             order_item_addons (
