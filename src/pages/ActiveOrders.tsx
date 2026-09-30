@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from '../types';
-import { ArrowLeft, Loader2, Clock, Trash2, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Loader2, Clock, Trash2, ShoppingBag, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ActiveOrders: React.FC = () => {
@@ -9,10 +9,14 @@ export const ActiveOrders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  // Estados para o Modal de Finalizar Comanda (Pagamento e Desconto)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [discount, setDiscount] = useState<string>('0.00');
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
   useEffect(() => {
     fetchActiveOrders();
 
-    // Opcional: Atualização em tempo real via Supabase Realtime
     const subscription = supabase
       .channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
@@ -56,21 +60,35 @@ export const ActiveOrders: React.FC = () => {
     }
   };
 
-  const handleFinishOrder = async (orderId: string, paymentMethod: string) => {
-    if (!window.confirm(`Deseja finalizar este pedido com pagamento em ${paymentMethod}?`)) return;
+  const handleOpenPaymentModal = (order: Order) => {
+    setSelectedOrder(order);
+    setDiscount('0.00');
+    setIsPaymentModalOpen(true);
+  };
 
-    setProcessingId(orderId);
+  const handleFinishOrder = async (paymentMethod: string) => {
+    if (!selectedOrder) return;
+
+    const subtotal = selectedOrder.total_amount;
+    const disc = parseFloat(discount) || 0;
+    const finalAmount = Math.max(0, subtotal - disc);
+
+    setProcessingId(selectedOrder.id);
     try {
       const { error } = await supabase
         .from('orders')
         .update({
           status: 'paid',
           payment_method: paymentMethod,
+          discount: disc,
+          total_amount: finalAmount,
           closed_at: new Date().toISOString()
         })
-        .eq('id', orderId);
+        .eq('id', selectedOrder.id);
 
       if (error) throw error;
+      setIsPaymentModalOpen(false);
+      setSelectedOrder(null);
       fetchActiveOrders();
     } catch (error) {
       console.error('Erro ao finalizar pedido:', error);
@@ -98,6 +116,13 @@ export const ActiveOrders: React.FC = () => {
     } finally {
       setProcessingId(null);
     }
+  };
+
+  const calculateTotalWithDiscount = () => {
+    if (!selectedOrder) return 0;
+    const subtotal = selectedOrder.total_amount;
+    const disc = parseFloat(discount) || 0;
+    return Math.max(0, subtotal - disc);
   };
 
   return (
@@ -134,7 +159,7 @@ export const ActiveOrders: React.FC = () => {
                 key={order.id} 
                 className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden"
               >
-                {/* Faixa decorativa no topo do card */}
+                {/* Faixa decorativa no topo */}
                 <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-pink-400 to-pink-600" />
 
                 <div>
@@ -151,8 +176,8 @@ export const ActiveOrders: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Lista de Itens do Pedido */}
-                  <div className="space-y-3 mb-6 max-h-60 overflow-y-auto pr-1">
+                  {/* Lista de Itens do Pedido (Sempre Visível) */}
+                  <div className="space-y-3 mb-6 max-h-56 overflow-y-auto pr-1">
                     {order.order_items?.map((item: any, idx: number) => (
                       <div key={idx} className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
                         <div className="flex justify-between items-start font-bold text-gray-800 text-sm">
@@ -160,7 +185,7 @@ export const ActiveOrders: React.FC = () => {
                           <span className="text-gray-900">R$ {item.total_price.toFixed(2)}</span>
                         </div>
 
-                        {/* Adicionais do Item */}
+                        {/* Adicionais */}
                         {item.order_item_addons && item.order_item_addons.length > 0 && (
                           <div className="mt-1.5 pl-2 border-l-2 border-pink-200 space-y-0.5">
                             {item.order_item_addons.map((addon: any, aIdx: number) => (
@@ -186,28 +211,18 @@ export const ActiveOrders: React.FC = () => {
                 <div>
                   {/* Valor Total */}
                   <div className="pt-4 border-t border-gray-100 flex justify-between items-center mb-4">
-                    <span className="text-sm font-semibold text-gray-500">Total a Pagar</span>
+                    <span className="text-sm font-semibold text-gray-500">Total</span>
                     <span className="text-2xl font-black text-gray-900">R$ {order.total_amount.toFixed(2)}</span>
                   </div>
 
                   {/* Botões de Ação */}
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        disabled={processingId === order.id}
-                        onClick={() => handleFinishOrder(order.id, 'Pix')}
-                        className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                      >
-                        {processingId === order.id ? 'Salvando...' : 'Pix / Dinheiro'}
-                      </button>
-                      <button
-                        disabled={processingId === order.id}
-                        onClick={() => handleFinishOrder(order.id, 'Cartão')}
-                        className="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                      >
-                        {processingId === order.id ? 'Salvando...' : 'Cartão'}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleOpenPaymentModal(order)}
+                      className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl text-sm transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      Pagar / Fechar Comanda
+                    </button>
                     <button
                       disabled={processingId === order.id}
                       onClick={() => handleCancelOrder(order.id)}
@@ -222,6 +237,73 @@ export const ActiveOrders: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de Pagamento e Desconto */}
+      {isPaymentModalOpen && selectedOrder && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setIsPaymentModalOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-2xl font-black text-gray-800 mb-1">Finalizar Comanda</h2>
+            <p className="text-sm text-gray-500 mb-6">Cliente: <span className="font-bold text-gray-700">{selectedOrder.customer_name || 'Balcão'}</span></p>
+
+            <div className="bg-gray-50 p-4 rounded-2xl space-y-3 mb-6 border border-gray-100">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Subtotal do Pedido:</span>
+                <span className="font-bold">R$ {selectedOrder.total_amount.toFixed(2)}</span>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                <span className="text-sm font-semibold text-gray-700">Desconto (R$):</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                  className="w-28 p-2 text-right bg-white border border-gray-300 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-pink-500 outline-none text-sm"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                <span className="text-base font-extrabold text-gray-800">TOTAL A PAGAR:</span>
+                <span className="text-2xl font-black text-pink-600">R$ {calculateTotalWithDiscount().toFixed(2)}</span>
+              </div>
+            </div>
+
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Selecione a forma de pagamento:</p>
+            <div className="space-y-2">
+              <button
+                disabled={processingId === selectedOrder.id}
+                onClick={() => handleFinishOrder('Pix')}
+                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl transition-all shadow-sm active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {processingId === selectedOrder.id ? 'Salvando...' : 'Pix'}
+              </button>
+              <button
+                disabled={processingId === selectedOrder.id}
+                onClick={() => handleFinishOrder('Cartão')}
+                className="w-full py-3.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-2xl transition-all shadow-sm active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {processingId === selectedOrder.id ? 'Salvando...' : 'Cartão (Crédito/Débito)'}
+              </button>
+              <button
+                disabled={processingId === selectedOrder.id}
+                onClick={() => handleFinishOrder('Dinheiro')}
+                className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-2xl transition-all shadow-sm active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {processingId === selectedOrder.id ? 'Salvando...' : 'Dinheiro'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
