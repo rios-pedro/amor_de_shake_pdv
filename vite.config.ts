@@ -18,7 +18,7 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/amor de shake.png',
+            src: 'public/amor de shake.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
