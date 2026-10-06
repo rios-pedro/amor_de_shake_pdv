@@ -7,19 +7,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Amor de Shake PDV</title>
     
-    <!-- Script para bloquear zoom de pinça -->
+    <!-- Impede zoom por pinça, duplo toque, teclado e Ctrl + scroll -->
     <script>
-      document.addEventListener('gesturestart', function (e) {
+      const preventZoom = function (e) {
         e.preventDefault();
-      });
+      };
+
+      document.addEventListener('gesturestart', preventZoom, { passive: false });
+      document.addEventListener('gesturechange', preventZoom, { passive: false });
+      document.addEventListener('gestureend', preventZoom, { passive: false });
+
       let lastTouchEnd = 0;
       document.addEventListener('touchend', function (e) {
         const now = (new Date()).getTime();
         if (now - lastTouchEnd <= 300) {
-          e.preventDefault();
+          preventZoom(e);
         }
         lastTouchEnd = now;
       }, { passive: false });
+
+      document.addEventListener('wheel', function (e) {
+        if (e.ctrlKey || e.metaKey) {
+          preventZoom(e);
+        }
+      }, { passive: false });
+
+      document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '_', '0'].includes(e.key)) {
+          preventZoom(e);
+        }
+      });
     </script>
   </head>
   <body class="bg-gray-100 text-gray-900 select-none">

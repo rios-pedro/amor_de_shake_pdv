@@ -1,12 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from '../types';
-import { ArrowLeft, TrendingUp, ShoppingBag, DollarSign, Loader2, Calendar } from 'lucide-react';
+import { ArrowLeft, TrendingUp, ShoppingBag, DollarSign, Loader2, Calendar, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+interface OrderItemAddonDetail {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  addon_name: string;
+}
+
+interface OrderItemDetail {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  product_name: string;
+  addons: OrderItemAddonDetail[];
+}
+
+interface OrderDetail extends Order {
+  items: OrderItemDetail[];
+}
 
 export const Dashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [loadingOrderDetail, setLoadingOrderDetail] = useState(false);
   
   // Pega a data local correta no formato YYYY-MM-DD
   const getLocalDateString = (date = new Date()) => {
@@ -19,12 +40,22 @@ export const Dashboard: React.FC = () => {
   const [startDate, setStartDate] = useState(todayStr);
   const [endDate, setEndDate] = useState(todayStr);
 
+  const getDateTimeRange = (date: string, endOfDay = false) => {
+    const [year, month, day] = date.split('-').map(Number);
+    const localDate = endOfDay
+      ? new Date(year, month - 1, day, 23, 59, 59, 999)
+      : new Date(year, month - 1, day, 0, 0, 0, 0);
+
+    return localDate.toISOString();
+  };
+
   const fetchDashboardData = async () => {
     setLoading(true);
     
-    // Constrói o range considerando o dia inteiro no fuso local
-    const start = `${startDate}T00:00:00`;
-    const end = `${endDate}T23:59:59`;
+    // Constrói o range considerando o dia inteiro no fuso local,
+    // incluindo registros desde 00:00:00 até 23:59:59.999.
+    const start = getDateTimeRange(startDate);
+    const end = getDateTimeRange(endDate, true);
 
     const { data, error } = await supabase
       .from('orders')
@@ -40,6 +71,81 @@ export const Dashboard: React.FC = () => {
       setOrders(data || []);
     }
     setLoading(false);
+  };
+
+  const handleOrderClick = async (order: Order) => {
+    setLoadingOrderDetail(true);
+
+    try {
+      const { data: itemData, error: itemError } = await supabase
+        .from('order_items')
+        .select('id, product_id, quantity, unit_price')
+        .eq('order_id', order.id);
+
+      if (itemError) throw itemError;
+
+      const orderItems = itemData || [];
+      const productIds = [...new Set(orderItems.map(item => item.product_id))];
+      const { data: productData, error: productError } = productIds.length > 0
+        ? await supabase
+            .from('products')
+            .select('id, name')
+            .in('id', productIds)
+        : { data: [], error: null };
+
+      if (productError) throw productError;
+
+      const productNames = new Map((productData || []).map(product => [product.id, product.name]));
+      const itemIds = orderItems.map(item => item.id);
+      const { data: addonData, error: addonError } = itemIds.length > 0
+        ? await supabase
+            .from('order_item_addons')
+            .select('id, order_item_id, addon_product_id, quantity, unit_price')
+            .in('order_item_id', itemIds)
+        : { data: [], error: null };
+
+      if (addonError) throw addonError;
+
+      const addonProductIds = [...new Set((addonData || []).map(addon => addon.addon_product_id))];
+      const { data: addonProductData, error: addonProductError } = addonProductIds.length > 0
+        ? await supabase
+            .from('products')
+            .select('id, name')
+            .in('id', addonProductIds)
+        : { data: [], error: null };
+
+      if (addonProductError) throw addonProductError;
+
+      const addonNames = new Map((addonProductData || []).map(addon => [addon.id, addon.name]));
+      const addonsByItem = new Map<string, OrderItemAddonDetail[]>();
+
+      (addonData || []).forEach(addon => {
+        const addons = addonsByItem.get(addon.order_item_id) || [];
+        addons.push({
+          id: addon.id,
+          quantity: addon.quantity,
+          unit_price: addon.unit_price,
+          addon_name: addonNames.get(addon.addon_product_id) || 'Adicional não encontrado',
+        });
+        addonsByItem.set(addon.order_item_id, addons);
+      });
+
+      setSelectedOrder({
+        ...order,
+        items: orderItems.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          product_name: productNames.get(item.product_id) || 'Produto não encontrado',
+          addons: addonsByItem.get(item.id) || [],
+        })),
+      });
+    } catch (error) {
+      console.error('Erro ao buscar detalhes do pedido:', error);
+      alert('Não foi possível carregar os detalhes do pedido.');
+    } finally {
+      setLoadingOrderDetail(false);
+    }
   };
 
   useEffect(() => {
@@ -163,7 +269,11 @@ export const Dashboard: React.FC = () => {
                     </thead>
                     <tbody>
                       {orders.map(order => (
-                        <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={order.id}
+                          onClick={() => handleOrderClick(order)}
+                          className="border-b border-gray-50 hover:bg-pink-50 cursor-pointer transition-colors"
+                        >
                           <td className="py-3 text-gray-600 text-sm">
                             {new Date(order.closed_at!).toLocaleString('pt-BR')}
                           </td>
@@ -193,6 +303,90 @@ export const Dashboard: React.FC = () => {
           </>
         )}
       </div>
+
+      {loadingOrderDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="rounded-2xl bg-white p-6 shadow-2xl">
+            <Loader2 className="mx-auto h-10 w-10 animate-spin text-pink-500" />
+            <p className="mt-3 text-sm font-medium text-gray-600">Carregando detalhes...</p>
+          </div>
+        </div>
+      )}
+
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Detalhes do Pedido</h2>
+                <p className="mt-1 text-gray-500">
+                  {new Date(selectedOrder.closed_at || selectedOrder.created_at).toLocaleString('pt-BR')}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                aria-label="Fechar detalhes do pedido"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="mb-6 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Cliente</p>
+                <p className="font-bold text-gray-800">{selectedOrder.customer_name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Pagamento</p>
+                <p className="font-bold text-gray-800">{selectedOrder.payment_method || 'Não informado'}</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-gray-600">
+                <ShoppingBag className="h-4 w-4 text-pink-500" />
+                Itens do pedido
+              </h3>
+              {selectedOrder.items.length > 0 ? (
+                <ul className="space-y-4 rounded-xl border border-gray-200 p-4">
+                  {selectedOrder.items.map(item => (
+                    <li key={item.id} className="text-sm text-gray-700">
+                      <div className="flex justify-between gap-3">
+                        <span>{item.quantity}x {item.product_name}</span>
+                        <span className="whitespace-nowrap font-semibold">
+                          R$ {(item.quantity * item.unit_price).toFixed(2)}
+                        </span>
+                      </div>
+                      {item.addons.length > 0 && (
+                        <ul className="mt-1 space-y-1 border-l-2 border-pink-200 pl-3 text-xs text-gray-500">
+                          {item.addons.map(addon => (
+                            <li key={addon.id} className="flex justify-between gap-3">
+                              <span>+ {item.quantity * addon.quantity}x {addon.addon_name}</span>
+                              <span className="whitespace-nowrap">
+                                R$ {(item.quantity * addon.quantity * addon.unit_price).toFixed(2)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="rounded-xl border border-gray-200 p-4 text-sm text-gray-400">Nenhum item encontrado.</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+              <span className="text-lg font-semibold text-gray-600">Total</span>
+              <span className="text-3xl font-black text-pink-600">
+                R$ {selectedOrder.total_amount.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

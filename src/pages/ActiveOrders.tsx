@@ -245,7 +245,7 @@ export const ActiveOrders: React.FC = () => {
                                   {item.quantity}x {item.product_name}
                                 </span>
                                 <span className="font-medium text-gray-500 whitespace-nowrap">
-                                  R$ {(item.quantity * item.unit_price + item.addons.reduce((total, addon) => total + item.quantity * addon.quantity * addon.unit_price, 0)).toFixed(2)}
+                                  R$ {(item.quantity * item.unit_price).toFixed(2)}
                                 </span>
                               </div>
                               {item.addons.length > 0 && (
@@ -308,7 +308,7 @@ export const ActiveOrders: React.FC = () => {
                       <div className="flex justify-between gap-3">
                         <span>{item.quantity}x {item.product_name}</span>
                         <span className="font-medium whitespace-nowrap">
-                          R$ {(item.quantity * item.unit_price + item.addons.reduce((total, addon) => total + item.quantity * addon.quantity * addon.unit_price, 0)).toFixed(2)}
+                          R$ {(item.quantity * item.unit_price).toFixed(2)}
                         </span>
                       </div>
                       {item.addons.length > 0 && (
