@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from '../types';
-import { Clock, CheckCircle2, ArrowLeft, Loader2, CreditCard, Banknote, Smartphone, ShoppingBag } from 'lucide-react';
+import { Clock, CheckCircle2, ArrowLeft, Loader2, CreditCard, Banknote, Smartphone, ShoppingBag, Edit3, Minus, Plus, Trash2, Save } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/cartStore';
 
@@ -32,7 +32,11 @@ export const ActiveOrders: React.FC = () => {
   const [orders, setOrders] = useState<ActiveOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutOrder, setCheckoutOrder] = useState<ActiveOrder | null>(null);
+  const [editingOrder, setEditingOrder] = useState<ActiveOrder | null>(null);
+  const [editingItems, setEditingItems] = useState<OrderItemSummary[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isCancelingOrder, setIsCancelingOrder] = useState(false);
   
   // Novo estado para controlar o desconto
   const [discount, setDiscount] = useState<number | ''>('');
@@ -40,6 +44,121 @@ export const ActiveOrders: React.FC = () => {
   const handleAddMoreItems = (order: ActiveOrder) => {
     setActiveOrder(order.id, order.customer_name);
     navigate('/pos'); // Manda de volta pro caixa
+  };
+
+  const getItemTotal = (item: OrderItemSummary, quantity = item.quantity) => {
+    const addonsTotal = item.addons.reduce(
+      (total, addon) => total + addon.quantity * addon.unit_price,
+      0,
+    );
+    return quantity * (item.unit_price + addonsTotal);
+  };
+
+  const handleOpenEditModal = (order: ActiveOrder) => {
+    setEditingOrder(order);
+    setEditingItems(order.items.map(item => ({ ...item, addons: [...item.addons] })));
+  };
+
+  const handleCloseEditModal = () => {
+    if (isSavingEdit) return;
+    setEditingOrder(null);
+    setEditingItems([]);
+  };
+
+  const handleItemQuantityChange = (itemId: string, quantity: number) => {
+    setEditingItems(items => items.map(item => (
+      item.id === itemId
+        ? { ...item, quantity: Math.max(0, Math.floor(quantity) || 0) }
+        : item
+    )));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingOrder) return;
+    setIsSavingEdit(true);
+
+    try {
+      for (const item of editingItems) {
+        if (item.quantity === 0) {
+          const { error: addonDeleteError } = await supabase
+            .from('order_item_addons')
+            .delete()
+            .eq('order_item_id', item.id);
+
+          if (addonDeleteError) throw addonDeleteError;
+
+          const { error: itemDeleteError } = await supabase
+            .from('order_items')
+            .delete()
+            .eq('id', item.id);
+
+          if (itemDeleteError) throw itemDeleteError;
+        } else {
+          const { error: itemUpdateError } = await supabase
+            .from('order_items')
+            .update({ quantity: item.quantity })
+            .eq('id', item.id);
+
+          if (itemUpdateError) throw itemUpdateError;
+        }
+      }
+
+      const updatedTotal = editingItems.reduce(
+        (total, item) => total + getItemTotal(item),
+        0,
+      );
+      const { error: orderUpdateError } = await supabase
+        .from('orders')
+        .update({ total_amount: updatedTotal })
+        .eq('id', editingOrder.id);
+
+      if (orderUpdateError) throw orderUpdateError;
+
+      const updatedItems = editingItems.filter(item => item.quantity > 0);
+      const updatedOrder = { ...editingOrder, items: updatedItems, total_amount: updatedTotal };
+      setOrders(ordersList => ordersList.map(order => (
+        order.id === updatedOrder.id ? updatedOrder : order
+      )));
+      setEditingOrder(null);
+      setEditingItems([]);
+    } catch (error) {
+      console.error('Erro ao editar comanda:', error);
+      alert('Erro ao atualizar os itens da comanda.');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!editingOrder) return;
+
+    const confirmed = window.confirm(
+      `Cancelar a comanda de ${editingOrder.customer_name}? Essa ação não poderá ser desfeita.`,
+    );
+    if (!confirmed) return;
+
+    setIsCancelingOrder(true);
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          status: 'canceled',
+          closed_at: new Date().toISOString(),
+        })
+        .eq('id', editingOrder.id);
+
+      if (error) throw error;
+
+      setOrders(ordersList => ordersList.filter(order => order.id !== editingOrder.id));
+      setEditingOrder(null);
+      setEditingItems([]);
+    } catch (error) {
+      console.error('Erro ao cancelar comanda:', error);
+      alert('Erro ao cancelar a comanda.');
+    } finally {
+      setIsCancelingOrder(false);
+    }
   };
 
   const fetchOpenOrders = async () => {
@@ -272,16 +391,22 @@ export const ActiveOrders: React.FC = () => {
                     R$ {order.total_amount.toFixed(2)}
                   </div>
                 </div>
-                <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-2">
+                <div className="p-4 bg-gray-50 border-t border-gray-100 grid grid-cols-3 gap-2">
+  <button
+    onClick={() => handleOpenEditModal(order)}
+    className="min-w-0 bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 font-bold py-3 px-2 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm whitespace-nowrap"
+  >
+    Editar
+  </button>
   <button
     onClick={() => handleAddMoreItems(order)}
-    className="flex-1 bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 font-bold py-3 rounded-xl transition-colors active:scale-95"
+    className="min-w-0 bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 font-bold py-3 px-2 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm whitespace-nowrap"
   >
     + Itens
   </button>
   <button
     onClick={() => handleOpenModal(order)}
-    className="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-xl transition-colors active:scale-95"
+    className="min-w-0 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-2 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm whitespace-nowrap"
   >
     Pagar
   </button>
@@ -291,6 +416,131 @@ export const ActiveOrders: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de Edição dos Itens */}
+      {editingOrder && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl">
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Editar Comanda</h2>
+                <p className="text-gray-500 mt-1">
+                  Cliente: <span className="font-bold text-gray-800">{editingOrder.customer_name}</span>
+                </p>
+              </div>
+              <Edit3 className="w-6 h-6 text-pink-500 flex-shrink-0" />
+            </div>
+
+            {editingItems.length === 0 ? (
+              <p className="text-center text-gray-400 py-8">Nenhum item nesta comanda.</p>
+            ) : (
+              <div className="space-y-3 my-6">
+                {editingItems.map(item => (
+                  <div key={item.id} className="rounded-xl border border-gray-200 p-4">
+                    <div className="flex justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-800 line-clamp-2">{item.product_name}</p>
+                        <p className="text-sm text-gray-500">
+                          R$ {item.unit_price.toFixed(2)} por unidade
+                        </p>
+                        {item.addons.length > 0 && (
+                          <ul className="mt-2 pl-3 border-l-2 border-pink-200 text-xs text-gray-500 space-y-0.5">
+                            {item.addons.map(addon => (
+                              <li key={addon.id}>
+                                + {addon.quantity}x {addon.addon_name} (R$ {addon.unit_price.toFixed(2)})
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleItemQuantityChange(item.id, 0)}
+                        className="h-9 w-9 flex-shrink-0 rounded-lg text-red-500 hover:bg-red-50"
+                        aria-label={`Remover ${item.product_name}`}
+                      >
+                        <Trash2 className="w-5 h-5 mx-auto" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 mt-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleItemQuantityChange(item.id, item.quantity - 1)}
+                          className="h-9 w-9 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40"
+                          disabled={item.quantity <= 0}
+                          aria-label={`Diminuir quantidade de ${item.product_name}`}
+                        >
+                          <Minus className="w-4 h-4 mx-auto" />
+                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={item.quantity}
+                          onChange={event => handleItemQuantityChange(item.id, Number(event.target.value))}
+                          className="w-16 rounded-lg border border-gray-300 p-2 text-center font-bold outline-none focus:ring-2 focus:ring-pink-500"
+                          aria-label={`Quantidade de ${item.product_name}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleItemQuantityChange(item.id, item.quantity + 1)}
+                          className="h-9 w-9 rounded-lg bg-pink-100 text-pink-600 hover:bg-pink-200"
+                          aria-label={`Aumentar quantidade de ${item.product_name}`}
+                        >
+                          <Plus className="w-4 h-4 mx-auto" />
+                        </button>
+                      </div>
+                      <span className="font-bold text-gray-800">
+                        R$ {getItemTotal(item).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-between items-center border-t border-gray-100 pt-4">
+              <span className="font-bold text-gray-600">Novo total</span>
+              <span className="text-2xl font-black text-pink-600">
+                R$ {editingItems.reduce((total, item) => total + getItemTotal(item), 0).toFixed(2)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
+              <button
+                type="button"
+                disabled={isSavingEdit || isCancelingOrder}
+                onClick={handleCloseEditModal}
+                className="min-w-0 py-3 px-2 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50 text-sm whitespace-nowrap"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isSavingEdit || isCancelingOrder}
+                onClick={handleCancelOrder}
+                className="min-w-0 flex items-center justify-center gap-1 border-2 border-red-200 text-red-600 hover:bg-red-50 font-bold py-3 px-2 rounded-xl transition-colors disabled:opacity-50 text-sm whitespace-nowrap"
+              >
+                <Trash2 className="w-5 h-5" />
+                <span className="sm:hidden">{isCancelingOrder ? 'Cancelando' : 'Cancelar'}</span>
+                <span className="hidden sm:inline">{isCancelingOrder ? 'Cancelando...' : 'Cancelar comanda'}</span>
+              </button>
+              <button
+                type="button"
+                disabled={isSavingEdit || isCancelingOrder}
+                onClick={handleSaveEdit}
+                className="col-span-2 sm:col-span-1 min-w-0 flex items-center justify-center gap-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-2 rounded-xl transition-colors disabled:bg-gray-300 text-sm whitespace-nowrap"
+              >
+                <Save className="w-5 h-5" />
+                <span className="sm:hidden">{isSavingEdit ? 'Salvando' : 'Salvar'}</span>
+                <span className="hidden sm:inline">{isSavingEdit ? 'Salvando...' : 'Salvar alterações'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Pagamento */}
       {checkoutOrder && (
