@@ -1,38 +1,97 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from '../types';
-import { Clock, CheckCircle2, ArrowLeft, Loader2, CreditCard, Banknote, Smartphone } from 'lucide-react';
+import { Clock, CheckCircle2, ArrowLeft, Loader2, CreditCard, Banknote, Smartphone, ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/cartStore';
+
+interface OrderItemSummary {
+  id: string;
+  order_id: string;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  product_name: string;
+}
+
+interface ActiveOrder extends Order {
+  items: OrderItemSummary[];
+}
 
 export const ActiveOrders: React.FC = () => {
   const navigate = useNavigate();
   const setActiveOrder = useCartStore(state => state.setActiveOrder);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<ActiveOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [checkoutOrder, setCheckoutOrder] = useState<Order | null>(null);
+  const [checkoutOrder, setCheckoutOrder] = useState<ActiveOrder | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   
   // Novo estado para controlar o desconto
   const [discount, setDiscount] = useState<number | ''>('');
 
-  const handleAddMoreItems = (order: Order) => {
+  const handleAddMoreItems = (order: ActiveOrder) => {
     setActiveOrder(order.id, order.customer_name);
     navigate('/pos'); // Manda de volta pro caixa
   };
 
   const fetchOpenOrders = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('status', 'open')
-      .order('created_at', { ascending: true });
+    try {
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('status', 'open')
+        .order('created_at', { ascending: true });
 
-    if (error) console.error('Erro ao buscar comandas:', error);
-    else setOrders(data || []);
-    
-    setLoading(false);
+      if (orderError) throw orderError;
+
+      const openOrders = (orderData || []) as Order[];
+      if (openOrders.length === 0) {
+        setOrders([]);
+        return;
+      }
+
+      const orderIds = openOrders.map(order => order.id);
+      const { data: itemData, error: itemError } = await supabase
+        .from('order_items')
+        .select('id, order_id, product_id, quantity, unit_price')
+        .in('order_id', orderIds);
+
+      if (itemError) throw itemError;
+
+      const orderItems = itemData || [];
+      const productIds = [...new Set(orderItems.map(item => item.product_id))];
+      const { data: productData, error: productError } = productIds.length > 0
+        ? await supabase
+            .from('products')
+            .select('id, name')
+            .in('id', productIds)
+        : { data: [], error: null };
+
+      if (productError) throw productError;
+
+      const productNames = new Map((productData || []).map(product => [product.id, product.name]));
+      const itemsByOrder = new Map<string, OrderItemSummary[]>();
+
+      orderItems.forEach(item => {
+        const items = itemsByOrder.get(item.order_id) || [];
+        items.push({
+          ...item,
+          product_name: productNames.get(item.product_id) || 'Produto não encontrado',
+        });
+        itemsByOrder.set(item.order_id, items);
+      });
+
+      setOrders(openOrders.map(order => ({
+        ...order,
+        items: itemsByOrder.get(order.id) || [],
+      })));
+    } catch (error) {
+      console.error('Erro ao buscar comandas e produtos:', error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -73,7 +132,7 @@ export const ActiveOrders: React.FC = () => {
     }
   };
 
-  const handleOpenModal = (order: Order) => {
+  const handleOpenModal = (order: ActiveOrder) => {
     setCheckoutOrder(order);
     setDiscount(''); // Zera o desconto ao abrir nova comanda
   };
@@ -127,6 +186,28 @@ export const ActiveOrders: React.FC = () => {
                     <span className="flex items-center text-sm font-medium text-orange-600 bg-orange-100 px-3 py-1 rounded-full whitespace-nowrap">
                       <Clock className="w-4 h-4 mr-1" /> {getElapsedTime(order.created_at)}
                     </span>
+                  </div>
+                  <div className="border-t border-gray-100 pt-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-gray-600 mb-2">
+                      <ShoppingBag className="w-4 h-4 text-pink-500" />
+                      Produtos
+                    </div>
+                    {order.items.length > 0 ? (
+                      <ul className="space-y-1.5">
+                        {order.items.map(item => (
+                          <li key={item.id} className="flex justify-between gap-3 text-sm text-gray-600">
+                            <span className="line-clamp-1">
+                              {item.quantity}x {item.product_name}
+                            </span>
+                            <span className="font-medium text-gray-500 whitespace-nowrap">
+                              R$ {(item.quantity * item.unit_price).toFixed(2)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-400">Nenhum produto encontrado.</p>
+                    )}
                   </div>
                   <div className="text-3xl font-black text-gray-900 mt-4">
                     R$ {order.total_amount.toFixed(2)}
