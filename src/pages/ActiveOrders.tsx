@@ -12,6 +12,14 @@ interface OrderItemSummary {
   quantity: number;
   unit_price: number;
   product_name: string;
+  addons: OrderItemAddonSummary[];
+}
+
+interface OrderItemAddonSummary {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  addon_name: string;
 }
 
 interface ActiveOrder extends Order {
@@ -71,6 +79,40 @@ export const ActiveOrders: React.FC = () => {
       if (productError) throw productError;
 
       const productNames = new Map((productData || []).map(product => [product.id, product.name]));
+      const itemIds = orderItems.map(item => item.id);
+      const { data: addonData, error: addonError } = itemIds.length > 0
+        ? await supabase
+            .from('order_item_addons')
+            .select('id, order_item_id, addon_product_id, quantity, unit_price')
+            .in('order_item_id', itemIds)
+        : { data: [], error: null };
+
+      if (addonError) throw addonError;
+
+      const addonProductIds = [...new Set((addonData || []).map(addon => addon.addon_product_id))];
+      const { data: addonProductData, error: addonProductError } = addonProductIds.length > 0
+        ? await supabase
+            .from('products')
+            .select('id, name')
+            .in('id', addonProductIds)
+        : { data: [], error: null };
+
+      if (addonProductError) throw addonProductError;
+
+      const addonNames = new Map((addonProductData || []).map(addon => [addon.id, addon.name]));
+      const addonsByItem = new Map<string, OrderItemAddonSummary[]>();
+
+      (addonData || []).forEach(addon => {
+        const addons = addonsByItem.get(addon.order_item_id) || [];
+        addons.push({
+          id: addon.id,
+          quantity: addon.quantity,
+          unit_price: addon.unit_price,
+          addon_name: addonNames.get(addon.addon_product_id) || 'Adicional não encontrado',
+        });
+        addonsByItem.set(addon.order_item_id, addons);
+      });
+
       const itemsByOrder = new Map<string, OrderItemSummary[]>();
 
       orderItems.forEach(item => {
@@ -78,6 +120,7 @@ export const ActiveOrders: React.FC = () => {
         items.push({
           ...item,
           product_name: productNames.get(item.product_id) || 'Produto não encontrado',
+          addons: addonsByItem.get(item.id) || [],
         });
         itemsByOrder.set(item.order_id, items);
       });
@@ -196,12 +239,28 @@ export const ActiveOrders: React.FC = () => {
                       <ul className="space-y-1.5">
                         {order.items.map(item => (
                           <li key={item.id} className="flex justify-between gap-3 text-sm text-gray-600">
-                            <span className="line-clamp-1">
-                              {item.quantity}x {item.product_name}
-                            </span>
-                            <span className="font-medium text-gray-500 whitespace-nowrap">
-                              R$ {(item.quantity * item.unit_price).toFixed(2)}
-                            </span>
+                            <div className="min-w-0">
+                              <div className="flex justify-between gap-3">
+                                <span className="line-clamp-1">
+                                  {item.quantity}x {item.product_name}
+                                </span>
+                                <span className="font-medium text-gray-500 whitespace-nowrap">
+                                  R$ {(item.quantity * item.unit_price + item.addons.reduce((total, addon) => total + item.quantity * addon.quantity * addon.unit_price, 0)).toFixed(2)}
+                                </span>
+                              </div>
+                              {item.addons.length > 0 && (
+                                <ul className="mt-1 pl-3 border-l-2 border-pink-200 text-xs text-gray-500 space-y-0.5">
+                                  {item.addons.map(addon => (
+                                    <li key={addon.id} className="flex justify-between gap-3">
+                                      <span className="line-clamp-1">+ {item.quantity * addon.quantity}x {addon.addon_name}</span>
+                                      <span className="whitespace-nowrap">
+                                        R$ {(item.quantity * addon.quantity * addon.unit_price).toFixed(2)}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -236,11 +295,36 @@ export const ActiveOrders: React.FC = () => {
       {/* Modal de Pagamento */}
       {checkoutOrder && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Finalizar Comanda</h2>
             <p className="text-gray-500 mb-6">Cliente: <span className="font-bold text-gray-800">{checkoutOrder.customer_name}</span></p>
             
             <div className="mb-8">
+              <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-600">Itens do pedido</h3>
+                <ul className="space-y-3">
+                  {checkoutOrder.items.map(item => (
+                    <li key={item.id} className="text-sm text-gray-700">
+                      <div className="flex justify-between gap-3">
+                        <span>{item.quantity}x {item.product_name}</span>
+                        <span className="font-medium whitespace-nowrap">
+                          R$ {(item.quantity * item.unit_price + item.addons.reduce((total, addon) => total + item.quantity * addon.quantity * addon.unit_price, 0)).toFixed(2)}
+                        </span>
+                      </div>
+                      {item.addons.length > 0 && (
+                        <ul className="mt-1 pl-3 border-l-2 border-pink-200 text-xs text-gray-500 space-y-0.5">
+                          {item.addons.map(addon => (
+                            <li key={addon.id}>
+                              + {item.quantity * addon.quantity}x {addon.addon_name} (R$ {(item.quantity * addon.quantity * addon.unit_price).toFixed(2)})
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="flex justify-between items-center text-gray-500 mb-4">
                 <span>Subtotal do Pedido:</span>
                 <span className="text-lg">R$ {checkoutOrder.total_amount.toFixed(2)}</span>
