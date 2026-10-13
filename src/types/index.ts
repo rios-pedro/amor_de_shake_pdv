@@ -3,6 +3,7 @@ export type ProductCategory = 'Shakes' | 'Refeições' | 'Lanches' | 'Bebidas' |
 export interface Product {
   id: string;
   name: string;
+  description?: string | null;
   price: number;
   category: ProductCategory;
   image_url?: string;

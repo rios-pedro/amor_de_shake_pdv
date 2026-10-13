@@ -184,9 +184,16 @@ export const POS: React.FC = () => {
                         )}
 
                         <div className="p-2.5 md:p-3 flex-1 flex flex-col justify-between">
-                          <h3 className="font-bold text-gray-800 leading-tight text-xs md:text-sm line-clamp-2 group-hover:text-pink-600 transition-colors">
-                            {product.name}
-                          </h3>
+                          <div>
+                            <h3 className="font-bold text-gray-800 leading-tight text-xs md:text-sm line-clamp-2 group-hover:text-pink-600 transition-colors">
+                              {product.name}
+                            </h3>
+                            {product.description && (
+                              <p className="mt-1 text-[10px] md:text-[11px] text-gray-500 line-clamp-2 leading-relaxed">
+                                {product.description}
+                              </p>
+                            )}
+                          </div>
                           <div className="pt-2 border-t border-gray-50 flex items-center justify-between">
                             <span className="text-xs md:text-sm font-black text-gray-900">
                               R$ {product.price.toFixed(2)}

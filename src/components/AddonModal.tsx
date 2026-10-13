@@ -94,8 +94,13 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-800">{product.name}</h2>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">{product.name}</h2>
+            {product.description && (
+              <p className="mt-2 text-sm text-gray-600 leading-relaxed">{product.description}</p>
+            )}
+          </div>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-gray-100">
             <X size={24} />
           </button>
