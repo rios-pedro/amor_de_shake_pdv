@@ -103,7 +103,7 @@ export const Cart: React.FC = () => {
     <div className="flex flex-col h-full bg-white shadow-lg rounded-l-2xl border-l border-gray-200">
       <div className="p-6 border-b border-gray-100">
         <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-          <ShoppingBag className="w-6 h-6 text-pink-500" />
+          <ShoppingBag className="w-6 h-6 text-brand-500" />
           {activeOrderId ? 'Adicionando Itens' : 'Pedido Atual'}
         </h2>
         <div className="mt-4">
@@ -115,7 +115,7 @@ export const Cart: React.FC = () => {
               onChange={(e) => setCustomerName(e.target.value)}
               disabled={!!activeOrderId} // Bloqueia edição do nome se estiver adicionando à comanda existente
               placeholder="Ex: João Silva"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400 outline-none disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-400 outline-none disabled:bg-gray-100 disabled:text-gray-500"
             />
             {activeOrderId && (
               <button 
@@ -148,7 +148,7 @@ export const Cart: React.FC = () => {
                       <p className="text-xs text-gray-500 mt-1">Sabor: {item.flavor.name}</p>
                     )}
                     {item.addons.length > 0 && (
-                      <ul className="text-sm text-gray-500 mt-1 pl-2 border-l-2 border-pink-200">
+                      <ul className="text-sm text-gray-500 mt-1 pl-2 border-l-2 border-brand-200">
                         {item.addons.map((addon, idx) => (
                           <li key={idx}>+ {addon.quantity}x {addon.product.name}</li>
                         ))}
@@ -179,7 +179,7 @@ export const Cart: React.FC = () => {
         <button
           onClick={handleCheckout}
           disabled={isSaving || cart.length === 0 || !customerName.trim()}
-          className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
           {isSaving ? 'Gravando...' : (activeOrderId ? 'Atualizar Comanda' : 'Abrir Comanda')}
         </button>

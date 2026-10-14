@@ -208,7 +208,7 @@ export const ProductsAdmin: React.FC = () => {
         {/* Cabeçalho Responsivo */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <Link to="/pos" className="inline-flex items-center text-pink-500 hover:text-pink-600 mb-2 font-medium">
+            <Link to="/pos" className="inline-flex items-center text-brand-500 hover:text-brand-600 mb-2 font-medium">
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao PDV
             </Link>
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">Gerenciar Produtos</h1>
@@ -216,19 +216,19 @@ export const ProductsAdmin: React.FC = () => {
           <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
             <Link
               to="/admin/product-flavors"
-              className="flex-1 md:flex-initial text-center bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
+              className="flex-1 md:flex-initial text-center bg-white border-2 border-brand-500 text-brand-500 hover:bg-brand-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
             >
               Vincular Sabores
             </Link>
             <Link
               to="/admin/product-addons"
-              className="flex-1 md:flex-initial text-center bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
+              className="flex-1 md:flex-initial text-center bg-white border-2 border-brand-500 text-brand-500 hover:bg-brand-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
             >
               Vincular Adicionais
             </Link>
             <button
               onClick={() => handleOpenModal()}
-              className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
+              className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
             >
               <Plus className="w-5 h-5" /> Novo Produto
             </button>
@@ -237,7 +237,7 @@ export const ProductsAdmin: React.FC = () => {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-12 h-12 text-pink-400 animate-spin" />
+            <Loader2 className="w-12 h-12 text-brand-400 animate-spin" />
           </div>
         ) : (
           <>
@@ -398,7 +398,7 @@ export const ProductsAdmin: React.FC = () => {
               <button
                 type="button"
                 onClick={handleConfirmCrop}
-                className="flex-1 px-4 py-3 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors flex items-center justify-center gap-2 text-sm"
+                className="flex-1 px-4 py-3 bg-brand-500 text-white font-bold rounded-xl hover:bg-brand-600 transition-colors flex items-center justify-center gap-2 text-sm"
               >
                 <Check className="w-5 h-5" /> Confirmar Recorte
               </button>
@@ -453,7 +453,7 @@ export const ProductsAdmin: React.FC = () => {
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm"
                   placeholder="Ex: Shake de Morango"
                 />
               </div>
@@ -464,7 +464,7 @@ export const ProductsAdmin: React.FC = () => {
                   rows={3}
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm resize-none"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm resize-none"
                   placeholder="Ex: Shake cremoso com morango, leite e cobertura de chantilly"
                 />
               </div>
@@ -479,7 +479,7 @@ export const ProductsAdmin: React.FC = () => {
                     min="0"
                     value={formData.price}
                     onChange={e => setFormData({...formData, price: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm"
                     placeholder="18.00"
                   />
                 </div>
@@ -488,7 +488,7 @@ export const ProductsAdmin: React.FC = () => {
                   <select
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value as ProductCategory})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none bg-white text-sm"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white text-sm"
                   >
                     {CATEGORIES.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -503,7 +503,7 @@ export const ProductsAdmin: React.FC = () => {
                   id="isActive"
                   checked={formData.is_active}
                   onChange={e => setFormData({...formData, is_active: e.target.checked})}
-                  className="w-5 h-5 text-pink-500 rounded focus:ring-pink-500"
+                  className="w-5 h-5 text-brand-500 rounded focus:ring-brand-500"
                 />
                 <label htmlFor="isActive" className="font-medium text-gray-700 cursor-pointer text-sm">
                   Produto Ativo (Aparece no PDV)
@@ -521,7 +521,7 @@ export const ProductsAdmin: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 px-4 py-3 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors disabled:opacity-50 text-sm"
+                  className="flex-1 px-4 py-3 bg-brand-500 text-white font-bold rounded-xl hover:bg-brand-600 transition-colors disabled:opacity-50 text-sm"
                 >
                   {isSaving ? 'Salvando...' : 'Salvar'}
                 </button>

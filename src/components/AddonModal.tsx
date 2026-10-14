@@ -148,8 +148,8 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
                   onClick={() => setSelectedFlavor(flavor)}
                   className={`rounded-full px-4 py-2 text-sm font-semibold border transition-all ${
                     selectedFlavor?.id === flavor.id
-                      ? 'border-pink-500 bg-pink-500 text-white shadow-sm'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-pink-300 hover:text-pink-600'
+                      ? 'border-brand-500 bg-brand-500 text-white shadow-sm'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600'
                   }`}
                 >
                   {flavor.name}
@@ -164,14 +164,14 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setQuantity(q => Math.max(1, q - 1))}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 text-pink-600 active:bg-pink-200"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600 active:bg-brand-200"
             >
               <Minus size={24} />
             </button>
             <span className="text-2xl font-bold">{quantity}</span>
             <button 
               onClick={() => setQuantity(q => q + 1)}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 text-pink-600 active:bg-pink-200"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600 active:bg-brand-200"
             >
               <Plus size={24} />
             </button>
@@ -218,7 +218,7 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
 
         <button
           onClick={handleConfirm}
-          className="w-full rounded-lg bg-pink-500 py-4 text-xl font-bold text-white transition-colors hover:bg-pink-600 active:bg-pink-700"
+          className="w-full rounded-lg bg-brand-500 py-4 text-xl font-bold text-white transition-colors hover:bg-brand-600 active:bg-brand-700"
         >
           Confirmar - R$ {total.toFixed(2)}
         </button>

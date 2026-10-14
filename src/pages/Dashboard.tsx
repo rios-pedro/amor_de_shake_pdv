@@ -168,7 +168,7 @@ export const Dashboard: React.FC = () => {
         {/* Cabeçalho Responsivo */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <Link to="/pos" className="inline-flex items-center text-pink-500 hover:text-pink-600 mb-2 font-medium">
+            <Link to="/pos" className="inline-flex items-center text-brand-500 hover:text-brand-600 mb-2 font-medium">
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao PDV
             </Link>
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">Dashboard de Vendas</h1>
@@ -199,7 +199,7 @@ export const Dashboard: React.FC = () => {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-12 h-12 text-pink-400 animate-spin" />
+            <Loader2 className="w-12 h-12 text-brand-400 animate-spin" />
           </div>
         ) : (
           <>
@@ -272,7 +272,7 @@ export const Dashboard: React.FC = () => {
                         <tr
                           key={order.id}
                           onClick={() => handleOrderClick(order)}
-                          className="border-b border-gray-50 hover:bg-pink-50 cursor-pointer transition-colors"
+                          className="border-b border-gray-50 hover:bg-brand-50 cursor-pointer transition-colors"
                         >
                           <td className="py-3 text-gray-600 text-sm">
                             {new Date(order.closed_at!).toLocaleString('pt-BR')}
@@ -307,7 +307,7 @@ export const Dashboard: React.FC = () => {
       {loadingOrderDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="rounded-2xl bg-white p-6 shadow-2xl">
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-pink-500" />
+            <Loader2 className="mx-auto h-10 w-10 animate-spin text-brand-500" />
             <p className="mt-3 text-sm font-medium text-gray-600">Carregando detalhes...</p>
           </div>
         </div>
@@ -345,7 +345,7 @@ export const Dashboard: React.FC = () => {
 
             <div className="mb-6">
               <h3 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-gray-600">
-                <ShoppingBag className="h-4 w-4 text-pink-500" />
+                <ShoppingBag className="h-4 w-4 text-brand-500" />
                 Itens do pedido
               </h3>
               {selectedOrder.items.length > 0 ? (
@@ -359,7 +359,7 @@ export const Dashboard: React.FC = () => {
                         </span>
                       </div>
                       {item.addons.length > 0 && (
-                        <ul className="mt-1 space-y-1 border-l-2 border-pink-200 pl-3 text-xs text-gray-500">
+                        <ul className="mt-1 space-y-1 border-l-2 border-brand-200 pl-3 text-xs text-gray-500">
                           {item.addons.map(addon => (
                             <li key={addon.id} className="flex justify-between gap-3">
                               <span>+ {item.quantity * addon.quantity}x {addon.addon_name}</span>
@@ -380,7 +380,7 @@ export const Dashboard: React.FC = () => {
 
             <div className="flex items-center justify-between border-t border-gray-100 pt-4">
               <span className="text-lg font-semibold text-gray-600">Total</span>
-              <span className="text-3xl font-black text-pink-600">
+              <span className="text-3xl font-black text-brand-600">
                 R$ {selectedOrder.total_amount.toFixed(2)}
               </span>
             </div>

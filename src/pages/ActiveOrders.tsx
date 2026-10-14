@@ -321,7 +321,7 @@ export const ActiveOrders: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <header className="flex justify-between items-center mb-8">
           <div>
-            <Link to="/pos" className="inline-flex items-center text-pink-500 hover:text-pink-600 mb-2 font-medium">
+            <Link to="/pos" className="inline-flex items-center text-brand-500 hover:text-brand-600 mb-2 font-medium">
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao PDV
             </Link>
             <h1 className="text-3xl font-extrabold text-gray-900">Comandas Abertas</h1>
@@ -333,7 +333,7 @@ export const ActiveOrders: React.FC = () => {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-12 h-12 text-pink-400 animate-spin" />
+            <Loader2 className="w-12 h-12 text-brand-400 animate-spin" />
           </div>
         ) : orders.length === 0 ? (
           <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-200 text-center">
@@ -354,7 +354,7 @@ export const ActiveOrders: React.FC = () => {
                   </div>
                   <div className="border-t border-gray-100 pt-4">
                     <div className="flex items-center gap-2 text-sm font-bold text-gray-600 mb-2">
-                      <ShoppingBag className="w-4 h-4 text-pink-500" />
+                      <ShoppingBag className="w-4 h-4 text-brand-500" />
                       Produtos
                     </div>
                     {order.items.length > 0 ? (
@@ -374,7 +374,7 @@ export const ActiveOrders: React.FC = () => {
                                 <div className="text-xs text-gray-500 mt-0.5">Sabor: {item.flavor_name}</div>
                               )}
                               {item.addons.length > 0 && (
-                                <ul className="mt-1 pl-3 border-l-2 border-pink-200 text-xs text-gray-500 space-y-0.5">
+                                <ul className="mt-1 pl-3 border-l-2 border-brand-200 text-xs text-gray-500 space-y-0.5">
                                   {item.addons.map(addon => (
                                     <li key={addon.id} className="flex justify-between gap-3">
                                       <span className="line-clamp-1">+ {item.quantity * addon.quantity}x {addon.addon_name}</span>
@@ -406,13 +406,13 @@ export const ActiveOrders: React.FC = () => {
   </button>
   <button
     onClick={() => handleAddMoreItems(order)}
-    className="min-w-0 bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 font-bold py-3 px-2 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm whitespace-nowrap"
+    className="min-w-0 bg-white border-2 border-brand-500 text-brand-500 hover:bg-brand-50 font-bold py-3 px-2 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm whitespace-nowrap"
   >
     + Itens
   </button>
   <button
     onClick={() => handleOpenModal(order)}
-    className="min-w-0 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-2 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm whitespace-nowrap"
+    className="min-w-0 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-2 rounded-xl transition-colors active:scale-95 text-xs sm:text-sm whitespace-nowrap"
   >
     Pagar
   </button>
@@ -434,7 +434,7 @@ export const ActiveOrders: React.FC = () => {
                   Cliente: <span className="font-bold text-gray-800">{editingOrder.customer_name}</span>
                 </p>
               </div>
-              <Edit3 className="w-6 h-6 text-pink-500 flex-shrink-0" />
+              <Edit3 className="w-6 h-6 text-brand-500 flex-shrink-0" />
             </div>
 
             {editingItems.length === 0 ? (
@@ -450,7 +450,7 @@ export const ActiveOrders: React.FC = () => {
                           R$ {item.unit_price.toFixed(2)} por unidade
                         </p>
                         {item.addons.length > 0 && (
-                          <ul className="mt-2 pl-3 border-l-2 border-pink-200 text-xs text-gray-500 space-y-0.5">
+                          <ul className="mt-2 pl-3 border-l-2 border-brand-200 text-xs text-gray-500 space-y-0.5">
                             {item.addons.map(addon => (
                               <li key={addon.id}>
                                 + {addon.quantity}x {addon.addon_name} (R$ {addon.unit_price.toFixed(2)})
@@ -486,13 +486,13 @@ export const ActiveOrders: React.FC = () => {
                           step="1"
                           value={item.quantity}
                           onChange={event => handleItemQuantityChange(item.id, Number(event.target.value))}
-                          className="w-16 rounded-lg border border-gray-300 p-2 text-center font-bold outline-none focus:ring-2 focus:ring-pink-500"
+                          className="w-16 rounded-lg border border-gray-300 p-2 text-center font-bold outline-none focus:ring-2 focus:ring-brand-500"
                           aria-label={`Quantidade de ${item.product_name}`}
                         />
                         <button
                           type="button"
                           onClick={() => handleItemQuantityChange(item.id, item.quantity + 1)}
-                          className="h-9 w-9 rounded-lg bg-pink-100 text-pink-600 hover:bg-pink-200"
+                          className="h-9 w-9 rounded-lg bg-brand-100 text-brand-600 hover:bg-brand-200"
                           aria-label={`Aumentar quantidade de ${item.product_name}`}
                         >
                           <Plus className="w-4 h-4 mx-auto" />
@@ -509,7 +509,7 @@ export const ActiveOrders: React.FC = () => {
 
             <div className="flex justify-between items-center border-t border-gray-100 pt-4">
               <span className="font-bold text-gray-600">Novo total</span>
-              <span className="text-2xl font-black text-pink-600">
+              <span className="text-2xl font-black text-brand-600">
                 R$ {editingItems.reduce((total, item) => total + getItemTotal(item), 0).toFixed(2)}
               </span>
             </div>
@@ -537,7 +537,7 @@ export const ActiveOrders: React.FC = () => {
                 type="button"
                 disabled={isSavingEdit || isCancelingOrder}
                 onClick={handleSaveEdit}
-                className="col-span-2 sm:col-span-1 min-w-0 flex items-center justify-center gap-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-2 rounded-xl transition-colors disabled:bg-gray-300 text-sm whitespace-nowrap"
+                className="col-span-2 sm:col-span-1 min-w-0 flex items-center justify-center gap-1 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-2 rounded-xl transition-colors disabled:bg-gray-300 text-sm whitespace-nowrap"
               >
                 <Save className="w-5 h-5" />
                 <span className="sm:hidden">{isSavingEdit ? 'Salvando' : 'Salvar'}</span>
@@ -568,7 +568,7 @@ export const ActiveOrders: React.FC = () => {
                         </span>
                       </div>
                       {item.addons.length > 0 && (
-                        <ul className="mt-1 pl-3 border-l-2 border-pink-200 text-xs text-gray-500 space-y-0.5">
+                        <ul className="mt-1 pl-3 border-l-2 border-brand-200 text-xs text-gray-500 space-y-0.5">
                           {item.addons.map(addon => (
                             <li key={addon.id}>
                               + {item.quantity * addon.quantity}x {addon.addon_name} (R$ {(item.quantity * addon.quantity * addon.unit_price).toFixed(2)})
@@ -595,14 +595,14 @@ export const ActiveOrders: React.FC = () => {
                   step="0.01"
                   value={discount}
                   onChange={(e) => setDiscount(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-28 p-2 text-right text-lg font-bold border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 outline-none"
+                  className="w-28 p-2 text-right text-lg font-bold border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500 outline-none"
                   placeholder="0.00"
                 />
               </div>
 
               <div className="text-center pt-4 border-t border-gray-100">
                 <span className="text-sm text-gray-500 uppercase tracking-widest font-semibold">Total a Pagar</span>
-                <div className="text-4xl font-black text-pink-600 mt-1">
+                <div className="text-4xl font-black text-brand-600 mt-1">
                   R$ {finalTotal.toFixed(2)}
                 </div>
               </div>
