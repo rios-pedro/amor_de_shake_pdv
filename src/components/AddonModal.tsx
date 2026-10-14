@@ -7,14 +7,14 @@ interface AddonModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (product: Product, quantity: number, addons: CartAddon[], flavor?: Product | null) => void;
+  onConfirm: (product: Product, quantity: number, addons: CartAddon[], flavors?: Product[]) => void;
 }
 
 export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [availableAddons, setAvailableAddons] = useState<Product[]>([]);
   const [availableFlavors, setAvailableFlavors] = useState<Product[]>([]);
-  const [selectedFlavor, setSelectedFlavor] = useState<Product | null>(null);
+  const [selectedFlavors, setSelectedFlavors] = useState<Product[]>([]);
   const [selectedAddons, setSelectedAddons] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -44,14 +44,14 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
 
         if (!flavorDataError && flavorData) {
           setAvailableFlavors(flavorData);
-          setSelectedFlavor(flavorData[0] || null);
+          setSelectedFlavors([]);
         } else {
           setAvailableFlavors([]);
-          setSelectedFlavor(null);
+          setSelectedFlavors([]);
         }
       } else {
         setAvailableFlavors([]);
-        setSelectedFlavor(null);
+        setSelectedFlavors([]);
       }
 
       if (addonError || !addonRelations || addonRelations.length === 0) {
@@ -79,10 +79,24 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
       fetchProductOptions();
       setQuantity(1);
       setSelectedAddons({});
+      setSelectedFlavors([]);
     }
   }, [isOpen, product]);
 
   if (!isOpen || !product) return null;
+
+  const maxFlavors = Math.max(0, product.max_flavors ?? 1);
+  const extraFlavorPrice = product.extra_flavor_price ?? 0;
+  const extraFlavorCount = Math.max(0, selectedFlavors.length - maxFlavors);
+  const extraFlavorsTotal = extraFlavorCount * extraFlavorPrice;
+
+  const handleFlavorToggle = (flavor: Product) => {
+    setSelectedFlavors(prev => (
+      prev.some(selected => selected.id === flavor.id)
+        ? prev.filter(selected => selected.id !== flavor.id)
+        : [...prev, flavor]
+    ));
+  };
 
   const handleAddonToggle = (addon: Product, action: 'add' | 'remove') => {
     setSelectedAddons(prev => {
@@ -102,8 +116,8 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
   };
 
   const handleConfirm = () => {
-    if (availableFlavors.length > 0 && !selectedFlavor) {
-      alert('Selecione um sabor antes de confirmar o pedido.');
+    if (availableFlavors.length > 0 && selectedFlavors.length === 0) {
+      alert('Selecione pelo menos um sabor antes de confirmar o pedido.');
       return;
     }
 
@@ -112,7 +126,7 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
       return { product: addonProduct, quantity: qty };
     });
 
-    onConfirm(product, quantity, addonsToCart, selectedFlavor ?? null);
+    onConfirm(product, quantity, addonsToCart, selectedFlavors);
     onClose();
   };
 
@@ -120,7 +134,7 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
     const addon = availableAddons.find(a => a.id === id);
     return total + ((addon?.price || 0) * qty);
   }, 0);
-  const total = (product.price + addonsTotal) * quantity;
+  const total = (product.price + addonsTotal + extraFlavorsTotal) * quantity;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -139,15 +153,19 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
 
         {availableFlavors.length > 0 && (
           <div className="mb-6">
-            <h3 className="mb-3 text-lg font-semibold text-gray-700">Escolha o Sabor</h3>
+            <h3 className="mb-1 text-lg font-semibold text-gray-700">Escolha os Sabores</h3>
+            <p className="mb-3 text-sm text-gray-500">
+              Até {maxFlavors} {maxFlavors === 1 ? 'sabor' : 'sabores'} sem custo adicional.
+              {extraFlavorPrice > 0 && ` Cada sabor excedente custa R$ ${extraFlavorPrice.toFixed(2)}.`}
+            </p>
             <div className="flex flex-wrap gap-2">
               {availableFlavors.map(flavor => (
                 <button
                   key={flavor.id}
                   type="button"
-                  onClick={() => setSelectedFlavor(flavor)}
+                  onClick={() => handleFlavorToggle(flavor)}
                   className={`rounded-full px-4 py-2 text-sm font-semibold border transition-all ${
-                    selectedFlavor?.id === flavor.id
+                    selectedFlavors.some(selected => selected.id === flavor.id)
                       ? 'border-pink-500 bg-pink-500 text-white shadow-sm'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-pink-300 hover:text-pink-600'
                   }`}
@@ -156,6 +174,11 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
                 </button>
               ))}
             </div>
+            {extraFlavorCount > 0 && (
+              <p className="mt-3 text-sm font-semibold text-pink-600">
+                Acréscimo de sabores: R$ {extraFlavorsTotal.toFixed(2)}
+              </p>
+            )}
           </div>
         )}
 

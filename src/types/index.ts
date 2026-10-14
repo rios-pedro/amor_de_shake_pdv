@@ -8,6 +8,8 @@ export interface Product {
   category: ProductCategory;
   image_url?: string;
   is_active: boolean;
+  max_flavors?: number | null;
+  extra_flavor_price?: number | null;
 }
 
 export interface CartAddon {
@@ -18,7 +20,7 @@ export interface CartAddon {
 export interface CartItem {
   id: string;
   product: Product;
-  flavor?: Product | null;
+  flavors: Product[];
   quantity: number;
   addons: CartAddon[];
   itemTotal: number;
