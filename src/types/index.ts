@@ -1,4 +1,4 @@
-export type ProductCategory = 'Shakes' | 'Refeições' | 'Lanches' | 'Bebidas' | 'Adicionais' | 'Kits' | 'Outros';
+export type ProductCategory = 'Shakes' | 'Refeições' | 'Lanches' | 'Bebidas' | 'Sabores' | 'Adicionais' | 'Kits' | 'Outros';
 
 export interface Product {
   id: string;
@@ -10,7 +10,6 @@ export interface Product {
   is_active: boolean;
 }
 
-// 👇 ESTA É A INTERFACE QUE ESTÁ FALTANDO OU NÃO FOI SALVA
 export interface CartAddon {
   product: Product;
   quantity: number;
@@ -19,6 +18,7 @@ export interface CartAddon {
 export interface CartItem {
   id: string;
   product: Product;
+  flavor?: Product | null;
   quantity: number;
   addons: CartAddon[];
   itemTotal: number;

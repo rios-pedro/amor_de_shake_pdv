@@ -25,11 +25,12 @@ export const ProductAddonsAdmin: React.FC = () => {
   const fetchBaseData = async () => {
     setLoading(true);
     try {
-      // Busca produtos principais (excluindo adicionais)
+      // Busca produtos principais (excluindo adicionais e sabores)
       const { data: prodData } = await supabase
         .from('products')
         .select('*')
         .neq('category', 'Adicionais')
+        .neq('category', 'Sabores')
         .eq('is_active', true)
         .order('name', { ascending: true });
 

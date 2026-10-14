@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-const CATEGORIES: ProductCategory[] = ['Shakes', 'Refeições', 'Lanches', 'Bebidas', 'Adicionais', 'Kits', 'Outros'];
+const CATEGORIES: ProductCategory[] = ['Shakes', 'Refeições', 'Lanches', 'Bebidas', 'Sabores', 'Adicionais', 'Kits', 'Outros'];
 
 export const ProductsAdmin: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -155,7 +155,7 @@ export const ProductsAdmin: React.FC = () => {
         price: parseFloat(formData.price),
         category: formData.category,
         is_active: formData.is_active,
-        image_url: imageUrl || null
+        image_url: imageUrl || ''
       };
 
       if (editingId) {
@@ -214,6 +214,12 @@ export const ProductsAdmin: React.FC = () => {
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">Gerenciar Produtos</h1>
           </div>
           <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
+            <Link
+              to="/admin/product-flavors"
+              className="flex-1 md:flex-initial text-center bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
+            >
+              Vincular Sabores
+            </Link>
             <Link
               to="/admin/product-addons"
               className="flex-1 md:flex-initial text-center bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"

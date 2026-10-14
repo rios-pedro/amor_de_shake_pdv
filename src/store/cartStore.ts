@@ -7,7 +7,7 @@ interface CartState {
   activeOrderId: string | null; // Guarda o ID da comanda se estivermos editando
   setCustomerName: (name: string) => void;
   setActiveOrder: (orderId: string, customerName: string) => void;
-  addToCart: (product: Product, quantity: number, addons: CartAddon[]) => void;
+  addToCart: (product: Product, quantity: number, addons: CartAddon[], flavor?: Product | null) => void;
   removeFromCart: (cartItemId: string) => void;
   clearCart: () => void;
   getCartTotal: () => number;
@@ -27,7 +27,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     cart: [] // Começa com carrinho vazio para adicionar apenas os novos itens
   }),
 
-  addToCart: (product, quantity, addons) => {
+  addToCart: (product, quantity, addons, flavor = null) => {
     const addonsTotal = addons.reduce(
       (total, addon) => total + addon.product.price * addon.quantity,
       0,
@@ -38,6 +38,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     const newItem: CartItem = {
       id: crypto.randomUUID(),
       product,
+      flavor,
       quantity,
       addons,
       itemTotal,

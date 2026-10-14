@@ -58,7 +58,7 @@ export const POS: React.FC = () => {
     }
   };
 
-  const mainProducts = products.filter(p => p.category !== 'Adicionais');
+  const mainProducts = products.filter(p => p.category !== 'Adicionais' && p.category !== 'Sabores');
   const groupedProducts = CATEGORIES.reduce((acc, cat) => {
     acc[cat] = mainProducts.filter(p => p.category === cat);
     return acc;

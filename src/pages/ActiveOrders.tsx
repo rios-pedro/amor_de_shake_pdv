@@ -9,9 +9,11 @@ interface OrderItemSummary {
   id: string;
   order_id: string;
   product_id: string;
+  flavor_id?: string | null;
   quantity: number;
   unit_price: number;
   product_name: string;
+  flavor_name?: string;
   addons: OrderItemAddonSummary[];
 }
 
@@ -181,13 +183,13 @@ export const ActiveOrders: React.FC = () => {
       const orderIds = openOrders.map(order => order.id);
       const { data: itemData, error: itemError } = await supabase
         .from('order_items')
-        .select('id, order_id, product_id, quantity, unit_price')
+        .select('id, order_id, product_id, flavor_id, quantity, unit_price')
         .in('order_id', orderIds);
 
       if (itemError) throw itemError;
 
       const orderItems = itemData || [];
-      const productIds = [...new Set(orderItems.map(item => item.product_id))];
+      const productIds = [...new Set(orderItems.map(item => item.product_id).concat(orderItems.map(item => item.flavor_id).filter(Boolean) as string[]))];
       const { data: productData, error: productError } = productIds.length > 0
         ? await supabase
             .from('products')
@@ -239,6 +241,7 @@ export const ActiveOrders: React.FC = () => {
         items.push({
           ...item,
           product_name: productNames.get(item.product_id) || 'Produto não encontrado',
+          flavor_name: item.flavor_id ? productNames.get(item.flavor_id) || 'Sabor não encontrado' : undefined,
           addons: addonsByItem.get(item.id) || [],
         });
         itemsByOrder.set(item.order_id, items);
@@ -367,6 +370,9 @@ export const ActiveOrders: React.FC = () => {
                                   R$ {(item.quantity * item.unit_price).toFixed(2)}
                                 </span>
                               </div>
+                              {item.flavor_name && (
+                                <div className="text-xs text-gray-500 mt-0.5">Sabor: {item.flavor_name}</div>
+                              )}
                               {item.addons.length > 0 && (
                                 <ul className="mt-1 pl-3 border-l-2 border-pink-200 text-xs text-gray-500 space-y-0.5">
                                   {item.addons.map(addon => (
