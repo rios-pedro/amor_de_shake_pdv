@@ -58,6 +58,7 @@ export const Cart: React.FC = () => {
           .insert([{
             order_id: orderId,
             product_id: cartItem.product.id,
+            flavor_id: cartItem.flavor?.id ?? null,
             quantity: cartItem.quantity,
             unit_price: cartItem.product.price
           }])
@@ -143,6 +144,9 @@ export const Cart: React.FC = () => {
                     <p className="font-semibold text-gray-800">
                       {item.quantity}x {item.product.name}
                     </p>
+                    {item.flavor && (
+                      <p className="text-xs text-gray-500 mt-1">Sabor: {item.flavor.name}</p>
+                    )}
                     {item.addons.length > 0 && (
                       <ul className="text-sm text-gray-500 mt-1 pl-2 border-l-2 border-pink-200">
                         {item.addons.map((addon, idx) => (

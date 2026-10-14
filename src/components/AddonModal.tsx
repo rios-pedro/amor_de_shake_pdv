@@ -7,50 +7,76 @@ interface AddonModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (product: Product, quantity: number, addons: CartAddon[]) => void;
+  onConfirm: (product: Product, quantity: number, addons: CartAddon[], flavor?: Product | null) => void;
 }
 
 export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [availableAddons, setAvailableAddons] = useState<Product[]>([]);
+  const [availableFlavors, setAvailableFlavors] = useState<Product[]>([]);
+  const [selectedFlavor, setSelectedFlavor] = useState<Product | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchAddonsForProduct() {
+    async function fetchProductOptions() {
       if (!product) return;
       setLoading(true);
 
-      // Busca na tabela de relação quais adicionais pertencem a este produto
-      const { data: relations, error: relError } = await supabase
-        .from('product_addons_relation')
-        .select('addon_id')
-        .eq('product_id', product.id);
+      const [{ data: flavorRelations, error: flavorError }, { data: addonRelations, error: addonError }] = await Promise.all([
+        supabase
+          .from('product_flavors_relation')
+          .select('flavor_id')
+          .eq('product_id', product.id),
+        supabase
+          .from('product_addons_relation')
+          .select('addon_id')
+          .eq('product_id', product.id),
+      ]);
 
-      if (relError || !relations || relations.length === 0) {
-        // Se o produto não tiver relações específicas cadastradas ainda, opcionalmente trazemos todos os adicionais ou nenhum
+      if (!flavorError && flavorRelations && flavorRelations.length > 0) {
+        const flavorIds = flavorRelations.map(r => r.flavor_id);
+        const { data: flavorData, error: flavorDataError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', flavorIds)
+          .eq('is_active', true);
+
+        if (!flavorDataError && flavorData) {
+          setAvailableFlavors(flavorData);
+          setSelectedFlavor(flavorData[0] || null);
+        } else {
+          setAvailableFlavors([]);
+          setSelectedFlavor(null);
+        }
+      } else {
+        setAvailableFlavors([]);
+        setSelectedFlavor(null);
+      }
+
+      if (addonError || !addonRelations || addonRelations.length === 0) {
         setAvailableAddons([]);
         setLoading(false);
         return;
       }
 
-      const addonIds = relations.map(r => r.addon_id);
-
-      // Busca os detalhes dos produtos que são esses adicionais
-      const { data: addonsData, error: addonsError } = await supabase
+      const addonIds = addonRelations.map(r => r.addon_id);
+      const { data: addonsData, error: addonsDataError } = await supabase
         .from('products')
         .select('*')
         .in('id', addonIds)
         .eq('is_active', true);
 
-      if (!addonsError && addonsData) {
+      if (!addonsDataError && addonsData) {
         setAvailableAddons(addonsData);
+      } else {
+        setAvailableAddons([]);
       }
       setLoading(false);
     }
-    
+
     if (isOpen && product) {
-      fetchAddonsForProduct();
+      fetchProductOptions();
       setQuantity(1);
       setSelectedAddons({});
     }
@@ -76,12 +102,17 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
   };
 
   const handleConfirm = () => {
+    if (availableFlavors.length > 0 && !selectedFlavor) {
+      alert('Selecione um sabor antes de confirmar o pedido.');
+      return;
+    }
+
     const addonsToCart: CartAddon[] = Object.entries(selectedAddons).map(([id, qty]) => {
       const addonProduct = availableAddons.find(a => a.id === id)!;
       return { product: addonProduct, quantity: qty };
     });
 
-    onConfirm(product, quantity, addonsToCart);
+    onConfirm(product, quantity, addonsToCart, selectedFlavor ?? null);
     onClose();
   };
 
@@ -94,12 +125,39 @@ export function AddonModal({ product, isOpen, onClose, onConfirm }: AddonModalPr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-800">{product.name}</h2>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">{product.name}</h2>
+            {product.description && (
+              <p className="mt-2 text-sm text-gray-600 leading-relaxed">{product.description}</p>
+            )}
+          </div>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-gray-100">
             <X size={24} />
           </button>
         </div>
+
+        {availableFlavors.length > 0 && (
+          <div className="mb-6">
+            <h3 className="mb-3 text-lg font-semibold text-gray-700">Escolha o Sabor</h3>
+            <div className="flex flex-wrap gap-2">
+              {availableFlavors.map(flavor => (
+                <button
+                  key={flavor.id}
+                  type="button"
+                  onClick={() => setSelectedFlavor(flavor)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold border transition-all ${
+                    selectedFlavor?.id === flavor.id
+                      ? 'border-pink-500 bg-pink-500 text-white shadow-sm'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-pink-300 hover:text-pink-600'
+                  }`}
+                >
+                  {flavor.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mb-6">
           <h3 className="mb-3 text-lg font-semibold text-gray-700">Quantidade do Item</h3>

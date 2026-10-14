@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-const CATEGORIES: ProductCategory[] = ['Shakes', 'Refeições', 'Lanches', 'Bebidas', 'Adicionais', 'Kits', 'Outros'];
+const CATEGORIES: ProductCategory[] = ['Shakes', 'Refeições', 'Lanches', 'Bebidas', 'Sabores', 'Adicionais', 'Kits', 'Outros'];
 
 export const ProductsAdmin: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,6 +18,7 @@ export const ProductsAdmin: React.FC = () => {
   // Estado do formulário
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     price: '',
     category: 'Shakes' as ProductCategory,
     is_active: true,
@@ -59,6 +60,7 @@ export const ProductsAdmin: React.FC = () => {
     if (product) {
       setFormData({
         name: product.name,
+        description: product.description || '',
         price: product.price.toString(),
         category: product.category,
         is_active: product.is_active,
@@ -67,7 +69,7 @@ export const ProductsAdmin: React.FC = () => {
       setImagePreview(product.image_url || '');
       setEditingId(product.id);
     } else {
-      setFormData({ name: '', price: '', category: 'Shakes', is_active: true, image_url: '' });
+      setFormData({ name: '', description: '', price: '', category: 'Shakes', is_active: true, image_url: '' });
       setImagePreview('');
       setEditingId(null);
     }
@@ -149,10 +151,11 @@ export const ProductsAdmin: React.FC = () => {
 
       const productData = {
         name: formData.name,
+        description: formData.description.trim() || null,
         price: parseFloat(formData.price),
         category: formData.category,
         is_active: formData.is_active,
-        image_url: imageUrl || null
+        image_url: imageUrl || ''
       };
 
       if (editingId) {
@@ -212,6 +215,12 @@ export const ProductsAdmin: React.FC = () => {
           </div>
           <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
             <Link
+              to="/admin/product-flavors"
+              className="flex-1 md:flex-initial text-center bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
+            >
+              Vincular Sabores
+            </Link>
+            <Link
               to="/admin/product-addons"
               className="flex-1 md:flex-initial text-center bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 px-4 py-2.5 md:px-5 md:py-3 rounded-xl font-bold shadow-sm transition-all text-sm active:scale-95"
             >
@@ -257,7 +266,12 @@ export const ProductsAdmin: React.FC = () => {
                           </div>
                         )}
                       </td>
-                      <td className="p-4 font-medium text-gray-800">{product.name}</td>
+                      <td className="p-4">
+                        <div className="font-medium text-gray-800">{product.name}</div>
+                        {product.description && (
+                          <div className="mt-1 text-xs text-gray-500 line-clamp-2 max-w-md">{product.description}</div>
+                        )}
+                      </td>
                       <td className="p-4">
                         <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
                           {product.category}
@@ -311,6 +325,9 @@ export const ProductsAdmin: React.FC = () => {
                     )}
                     <div className="overflow-hidden">
                       <h3 className="font-bold text-gray-800 text-sm truncate">{product.name}</h3>
+                      {product.description && (
+                        <p className="mt-1 text-[10px] text-gray-500 line-clamp-2">{product.description}</p>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-medium">
                           {product.category}
@@ -438,6 +455,17 @@ export const ProductsAdmin: React.FC = () => {
                   onChange={e => setFormData({...formData, name: e.target.value})}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm"
                   placeholder="Ex: Shake de Morango"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <textarea
+                  rows={3}
+                  value={formData.description}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm resize-none"
+                  placeholder="Ex: Shake cremoso com morango, leite e cobertura de chantilly"
                 />
               </div>
 
