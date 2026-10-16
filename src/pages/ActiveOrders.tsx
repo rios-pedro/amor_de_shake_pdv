@@ -189,17 +189,6 @@ export const ActiveOrders: React.FC = () => {
       if (itemError) throw itemError;
 
       const orderItems = itemData || [];
-      const productIds = [...new Set(orderItems.map(item => item.product_id).concat(orderItems.map(item => item.flavor_id).filter(Boolean) as string[]))];
-      const { data: productData, error: productError } = productIds.length > 0
-        ? await supabase
-            .from('products')
-            .select('id, name')
-            .in('id', productIds)
-        : { data: [], error: null };
-
-      if (productError) throw productError;
-
-      const productNames = new Map((productData || []).map(product => [product.id, product.name]));
       const itemIds = orderItems.map(item => item.id);
       const { data: flavorData, error: flavorError } = itemIds.length > 0
         ? await supabase
@@ -210,6 +199,22 @@ export const ActiveOrders: React.FC = () => {
 
       if (flavorError) throw flavorError;
 
+      const productIds = [...new Set(
+        orderItems
+          .map(item => item.product_id)
+          .concat(orderItems.map(item => item.flavor_id).filter(Boolean) as string[])
+          .concat((flavorData || []).map(flavor => flavor.flavor_product_id))
+      )];
+      const { data: productData, error: productError } = productIds.length > 0
+        ? await supabase
+            .from('products')
+            .select('id, name')
+            .in('id', productIds)
+        : { data: [], error: null };
+
+      if (productError) throw productError;
+
+      const productNames = new Map((productData || []).map(product => [product.id, product.name]));
       const flavorsByItem = new Map<string, string[]>();
       (flavorData || []).forEach(flavor => {
         const flavorNames = flavorsByItem.get(flavor.order_item_id) || [];
