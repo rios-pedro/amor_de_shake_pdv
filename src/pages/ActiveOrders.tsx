@@ -13,7 +13,7 @@ interface OrderItemSummary {
   quantity: number;
   unit_price: number;
   product_name: string;
-  flavor_name?: string;
+  flavor_names: string[];
   addons: OrderItemAddonSummary[];
 }
 
@@ -201,6 +201,23 @@ export const ActiveOrders: React.FC = () => {
 
       const productNames = new Map((productData || []).map(product => [product.id, product.name]));
       const itemIds = orderItems.map(item => item.id);
+      const { data: flavorData, error: flavorError } = itemIds.length > 0
+        ? await supabase
+            .from('order_item_flavors')
+            .select('order_item_id, flavor_product_id')
+            .in('order_item_id', itemIds)
+        : { data: [], error: null };
+
+      if (flavorError) throw flavorError;
+
+      const flavorsByItem = new Map<string, string[]>();
+      (flavorData || []).forEach(flavor => {
+        const flavorNames = flavorsByItem.get(flavor.order_item_id) || [];
+        const flavorName = productNames.get(flavor.flavor_product_id);
+        if (flavorName) flavorNames.push(flavorName);
+        flavorsByItem.set(flavor.order_item_id, flavorNames);
+      });
+
       const { data: addonData, error: addonError } = itemIds.length > 0
         ? await supabase
             .from('order_item_addons')
@@ -241,7 +258,8 @@ export const ActiveOrders: React.FC = () => {
         items.push({
           ...item,
           product_name: productNames.get(item.product_id) || 'Produto não encontrado',
-          flavor_name: item.flavor_id ? productNames.get(item.flavor_id) || 'Sabor não encontrado' : undefined,
+          flavor_names: flavorsByItem.get(item.id)
+            || (item.flavor_id ? [productNames.get(item.flavor_id) || 'Sabor não encontrado'] : []),
           addons: addonsByItem.get(item.id) || [],
         });
         itemsByOrder.set(item.order_id, items);
@@ -370,8 +388,10 @@ export const ActiveOrders: React.FC = () => {
                                   R$ {(item.quantity * item.unit_price).toFixed(2)}
                                 </span>
                               </div>
-                              {item.flavor_name && (
-                                <div className="text-xs text-gray-500 mt-0.5">Sabor: {item.flavor_name}</div>
+                              {item.flavor_names.length > 0 && (
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  Sabores: {item.flavor_names.join(', ')}
+                                </div>
                               )}
                               {item.addons.length > 0 && (
                                 <ul className="mt-1 pl-3 border-l-2 border-brand-200 text-xs text-gray-500 space-y-0.5">

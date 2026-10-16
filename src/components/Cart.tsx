@@ -53,19 +53,36 @@ export const Cart: React.FC = () => {
 
       // 2. Insere os novos itens (serve tanto para comanda nova quanto atualizada)
       for (const cartItem of cart) {
+        const maxFlavors = Math.max(0, cartItem.product.max_flavors ?? 1);
+        const extraFlavorCount = Math.max(0, cartItem.flavors.length - maxFlavors);
+        const flavorExtraAmount = extraFlavorCount * (cartItem.product.extra_flavor_price ?? 0);
+
         const { data: itemData, error: itemError } = await supabase
           .from('order_items')
           .insert([{
-            order_id: orderId,
-            product_id: cartItem.product.id,
-            flavor_id: cartItem.flavor?.id ?? null,
-            quantity: cartItem.quantity,
-            unit_price: cartItem.product.price
+              order_id: orderId,
+              product_id: cartItem.product.id,
+              flavor_id: cartItem.flavors[0]?.id ?? null,
+              quantity: cartItem.quantity,
+              unit_price: cartItem.product.price + flavorExtraAmount
           }])
           .select('id')
           .single();
 
         if (itemError) throw itemError;
+
+        if (cartItem.flavors.length > 0) {
+          const flavorsToInsert = cartItem.flavors.map(flavor => ({
+            order_item_id: itemData.id,
+            flavor_product_id: flavor.id,
+          }));
+
+          const { error: flavorError } = await supabase
+            .from('order_item_flavors')
+            .insert(flavorsToInsert);
+
+          if (flavorError) throw flavorError;
+        }
 
         // 3. Insere adicionais se houver
         if (cartItem.addons.length > 0) {
@@ -144,8 +161,10 @@ export const Cart: React.FC = () => {
                     <p className="font-semibold text-gray-800">
                       {item.quantity}x {item.product.name}
                     </p>
-                    {item.flavor && (
-                      <p className="text-xs text-gray-500 mt-1">Sabor: {item.flavor.name}</p>
+                    {item.flavors.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Sabores: {item.flavors.map(flavor => flavor.name).join(', ')}
+                      </p>
                     )}
                     {item.addons.length > 0 && (
                       <ul className="text-sm text-gray-500 mt-1 pl-2 border-l-2 border-brand-200">

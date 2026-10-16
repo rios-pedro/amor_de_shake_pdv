@@ -9,8 +9,11 @@ export const ProductFlavorsAdmin: React.FC = () => {
   const [flavors, setFlavors] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [linkedFlavorIds, setLinkedFlavorIds] = useState<string[]>([]);
+  const [maxFlavors, setMaxFlavors] = useState('1');
+  const [extraFlavorPrice, setExtraFlavorPrice] = useState('0');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     fetchBaseData();
@@ -54,6 +57,10 @@ export const ProductFlavorsAdmin: React.FC = () => {
   };
 
   const fetchProductRelations = async (productId: string) => {
+    const product = products.find(item => item.id === productId);
+    setMaxFlavors(String(product?.max_flavors ?? 1));
+    setExtraFlavorPrice(String(product?.extra_flavor_price ?? 0));
+
     const { data, error } = await supabase
       .from('product_flavors_relation')
       .select('flavor_id')
@@ -63,6 +70,52 @@ export const ProductFlavorsAdmin: React.FC = () => {
       setLinkedFlavorIds(data.map(r => r.flavor_id));
     } else {
       setLinkedFlavorIds([]);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!selectedProduct) return;
+
+    const parsedMaxFlavors = Number.parseInt(maxFlavors, 10);
+    const parsedExtraPrice = Number.parseFloat(extraFlavorPrice.replace(',', '.'));
+
+    if (!Number.isInteger(parsedMaxFlavors) || parsedMaxFlavors < 1) {
+      alert('Informe um limite de sabores maior ou igual a 1.');
+      return;
+    }
+
+    if (!Number.isFinite(parsedExtraPrice) || parsedExtraPrice < 0) {
+      alert('Informe um valor adicional válido.');
+      return;
+    }
+
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          max_flavors: parsedMaxFlavors,
+          extra_flavor_price: parsedExtraPrice,
+        })
+        .eq('id', selectedProduct.id);
+
+      if (error) throw error;
+
+      const updatedProduct = {
+        ...selectedProduct,
+        max_flavors: parsedMaxFlavors,
+        extra_flavor_price: parsedExtraPrice,
+      };
+      setSelectedProduct(updatedProduct);
+      setProducts(current => current.map(product => (
+        product.id === updatedProduct.id ? updatedProduct : product
+      )));
+      alert('Configuração de sabores salva.');
+    } catch (error) {
+      console.error('Erro ao salvar configuração de sabores:', error);
+      alert('Erro ao salvar a configuração de sabores.');
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -92,7 +145,10 @@ export const ProductFlavorsAdmin: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao atualizar vínculo de sabor:', error);
-      alert('Erro ao atualizar o sabor do produto.');
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : 'Erro desconhecido';
+      alert(`Erro ao atualizar o sabor do produto: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
@@ -146,6 +202,38 @@ export const ProductFlavorsAdmin: React.FC = () => {
                   <div className="mb-6 pb-4 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-gray-800">Sabores para: <span className="text-brand-600">{selectedProduct.name}</span></h2>
                     <p className="text-sm text-gray-500 mt-1">Marque os sabores disponíveis para este item.</p>
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <label className="text-sm font-medium text-gray-700">
+                        Máximo sem acréscimo
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={maxFlavors}
+                          onChange={event => setMaxFlavors(event.target.value)}
+                          className="mt-1 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
+                        />
+                      </label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Valor por sabor extra (R$)
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={extraFlavorPrice}
+                          onChange={event => setExtraFlavorPrice(event.target.value)}
+                          className="mt-1 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSaveSettings}
+                        disabled={savingSettings}
+                        className="p-2.5 bg-pink-500 text-white rounded-lg font-bold hover:bg-pink-600 disabled:opacity-50"
+                      >
+                        {savingSettings ? 'Salvando...' : 'Salvar regra'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex-1 overflow-y-auto space-y-3 pr-2">
